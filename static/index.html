@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Beyond Clicks Study</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+  <div class="home-hero">
+    <h1 id="title">Beyond Clicks: Shopping Decisions Study</h1>
+    <p>Thank you for helping with our research. The researcher will tell you which study to start.</p>
+  </div>
+
+  <div class="wrap" id="resume-box" style="margin-top:0">
+  </div>
+
+  <div class="choices">
+    <div class="choice" id="pilot-card">
+      <span class="tag">Phase 1</span>
+      <h2>Pilot study</h2>
+      <p class="muted">Shop for phones on your own, then watch a replay of your mouse and mark when you felt unsure. About 70 minutes.</p>
+      <button class="primary big" id="start-pilot">Start pilot study</button>
+    </div>
+    <div class="choice" id="main-card">
+      <span class="tag">Phase 2</span>
+      <h2>Main study</h2>
+      <p class="muted">Shop for phones in four rounds, sometimes with an AI assistant. About 75 minutes.</p>
+      <button class="primary big" id="start-main">Start main study</button>
+      <p class="small muted hidden" id="main-locked">Locked: the researchers will open this after the pilot study is analysed.</p>
+    </div>
+  </div>
+
+  <div class="home-foot">
+    <a href="/admin" class="small">Researcher login</a>
+  </div>
+
+<script src="/static/js/api.js"></script>
+<script>
+(async function () {
+  const st = await API.get("/api/status");
+  document.getElementById("title").textContent = st.study_info.title;
+  const mainBtn = document.getElementById("start-main");
+  if (!st.main_unlocked) {
+    mainBtn.disabled = true;
+    document.getElementById("main-card").classList.add("locked");
+    document.getElementById("main-locked").classList.remove("hidden");
+  }
+  const saved = Session.load();
+  if (saved) {
+    try {
+      const me = await API.get("/api/me", saved.token);
+      if (me.status === "started") {
+        document.getElementById("resume-box").innerHTML =
+          `<div class="notice info row"><span>An unfinished session <b>${me.code}</b> is open in this browser.</span>
+           <span class="spacer" style="flex:1"></span>
+           <a class="btn primary" href="/run">Continue ${me.code}</a>
+           <button id="discard">Start fresh</button></div>`;
+        document.getElementById("discard").onclick = () => { Session.clear(); location.reload(); };
+      } else { Session.clear(); }
+    } catch (e) { Session.clear(); }
+  }
+  async function start(study) {
+    if (Session.load() && !confirm("Start a new session? The unfinished one in this browser will be closed.")) return;
+    try {
+      const r = await API.post("/api/participants", { study });
+      Session.save({ token: r.token, code: r.code, study });
+      location.href = "/run";
+    } catch (e) { alert(e.message); }
+  }
+  document.getElementById("start-pilot").onclick = () => start("pilot");
+  mainBtn.onclick = () => start("main");
+})();
+</script>
+</body>
+</html>

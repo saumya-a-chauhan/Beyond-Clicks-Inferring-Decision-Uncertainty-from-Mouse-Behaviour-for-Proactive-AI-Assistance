@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Researcher Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/style.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+</head>
+<body>
+  <div class="topbar">
+    <span class="brand">Researcher dashboard</span>
+    <span class="spacer"></span>
+    <a href="/" class="small">Participant start page</a>
+    <button id="logout" class="hidden">Log out</button>
+  </div>
+
+  <div class="wrap hidden" id="login">
+    <div class="panel" style="max-width:420px;margin:40px auto">
+      <h2>Researcher login</h2>
+      <p class="muted">Study data is visible only to researchers.</p>
+      <label for="pw">Password</label>
+      <input type="password" id="pw" autocomplete="current-password">
+      <div class="actions"><button class="primary" id="dologin">Log in</button></div>
+      <p class="small" id="loginerr" style="color:var(--bad)"></p>
+    </div>
+  </div>
+
+  <div class="wide hidden" id="dash">
+    <div class="tabs" id="tabs">
+      <button data-tab="overview" class="active">Overview</button>
+      <button data-tab="participants">Participants</button>
+      <button data-tab="pilot">Pilot analysis &amp; freeze</button>
+      <button data-tab="main">Main study results</button>
+      <button data-tab="settings">Settings</button>
+      <button data-tab="tools">Export &amp; tools</button>
+    </div>
+    <div id="view"></div>
+  </div>
+
+  <script src="/static/js/api.js"></script>
+  <script src="/static/js/admin.js"></script>
+</body>
+</html>

@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Beyond Clicks</title>
+  <meta name="description" content="Inferring decision uncertainty from mouse behaviour for proactive AI assistance. HTI (DS 4101) project.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root { --ink:#1d2433; --muted:#5d6678; --line:#e2e5ee; --brand:#3557d6; --bg:#f6f7fb; --panel:#fff; }
+    @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --ink:#e8ebf3; --muted:#a4abbd; --line:#2c3344; --brand:#8aa2ff; --bg:#121622; --panel:#1a2030; } }
+    :root[data-theme="dark"] { --ink:#e8ebf3; --muted:#a4abbd; --line:#2c3344; --brand:#8aa2ff; --bg:#121622; --panel:#1a2030; }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family:Inter, system-ui, sans-serif; color:var(--ink); background:var(--bg); line-height:1.6; }
+    main { max-width: 900px; margin: 0 auto; padding: 48px 16px 80px; }
+    h1 { font-size: 2.1rem; line-height: 1.2; margin: 0 0 8px; }
+    h2 { margin-top: 40px; font-size: 1.35rem; }
+    .lead { font-size: 1.15rem; color: var(--muted); }
+    .card { background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:20px 24px; margin:16px 0; }
+    .links { display:flex; gap:12px; flex-wrap:wrap; margin:20px 0; }
+    .links a { background:var(--brand); color:#fff; padding:10px 18px; border-radius:10px; text-decoration:none; font-weight:600; }
+    .links a.alt { background:transparent; color:var(--brand); border:1px solid var(--brand); }
+    table { width:100%; border-collapse:collapse; font-size:.95rem; }
+    th, td { text-align:left; padding:8px 10px; border-bottom:1px solid var(--line); vertical-align:top; }
+    ol li, ul li { margin: 4px 0; }
+    a { color: var(--brand); }
+    .muted { color: var(--muted); }
+  </style>
+</head>
+<body>
+<main>
+  <p class="muted">HTI (DS 4101) · Plaksha University · Track 1: Experimentation</p>
+  <h1>Beyond Clicks: Inferring Decision Uncertainty from Mouse Behaviour for Proactive AI Assistance</h1>
+  <p class="lead">Can a website notice from your mouse movement that you are stuck choosing, and offer the right help at the right moment, so that you decide faster without deciding worse?</p>
+
+  <div class="links">
+    <a href="https://github.com/saumya-a-chauhan/Beyond-Clicks-Inferring-Decision-Uncertainty-from-Mouse-Behaviour-for-Proactive-AI-Assistance">Code on GitHub</a>
+    <a class="alt" href="presentation.pdf">Presentation (PDF)</a>
+    <a class="alt" href="#video">Video summary</a>
+  </div>
+
+  <h2>Abstract</h2>
+  <div class="card">
+    <p>Recommender systems use what people bought or liked before, but nothing helps them while they are stuck choosing between options. Mouse-tracking research shows that conflict between options is visible in cursor movement. We built a web experiment in which participants choose the best phone for a given buyer. A real-time detector combines five cursor signs (back-and-forth between phones, freezing on a spec, pausing, wandering and scroll flip-flops), each compared with the person's own baseline. When the detector sees hesitation, an LLM assistant offers a comparison or a spec explanation grounded in the phone data.</p>
+    <p>The detector's threshold is chosen on pilot data, against participants' own replay labels, with a pre-registered rule and leave-one-person-out validation. It is then frozen. In the main within-subjects study (balanced Latin square), we compare four conditions: no AI, on-demand AI, detector-timed pop-ups and randomly timed pop-ups. The measures are decision time, decision quality (rank of the chosen phone, correctness, switching), whether people were really unsure when the pop-up appeared, workload and trust.</p>
+  </div>
+
+  <h2>Method in brief</h2>
+  <table>
+    <tr><th>Phase</th><th>What happens</th></tr>
+    <tr><td>Pilot (8–12 people)</td><td>Warm-ups for a personal baseline, 4 rounds without AI, then a replay of one's own cursor while holding SPACE when one remembers feeling unsure.</td></tr>
+    <tr><td>Freeze</td><td>Simulate the live detector on the pilot data; pick the threshold by a pre-registered rule; validate with leave-one-person-out; lock all settings.</td></tr>
+    <tr><td>Main (24 people)</td><td>4 rounds: No AI, Ask AI, Smart pop-up, Random pop-up, in a counterbalanced order; questionnaires after each round (NASA-TLX, SAM, trust, SUS).</td></tr>
+  </table>
+
+  <h2>Results</h2>
+  <div class="card"><p class="muted">To be added after the study: Smart vs Random "were you unsure?" rate, detector AUC at random moments, decision time and quality per condition.</p></div>
+
+  <h2 id="video">Video summary</h2>
+  <div class="card"><p class="muted">Add a link to the video (under 2 minutes) here.</p></div>
+
+  <h2>Team</h2>
+  <div class="card"><p class="muted">Add team member names here.</p></div>
+
+  <h2>Documentation</h2>
+  <ul>
+    <li><a href="RUNNING_THE_STUDY.html">Running the study</a>: step-by-step protocol</li>
+    <li><a href="DETECTOR.html">How hesitation is detected</a></li>
+    <li><a href="VALUES.html">Every value and why</a></li>
+    <li><a href="ANALYSIS.html">Analysis plan and figures</a></li>
+    <li><a href="DATA_DICTIONARY.html">Data dictionary</a></li>
+    <li><a href="DEPLOY.html">Deployment</a></li>
+  </ul>
+</main>
+</body>
+</html>
