@@ -42,6 +42,10 @@ explained: [docs/DETECTOR.md](docs/DETECTOR.md) and [docs/VALUES.md](docs/VALUES
 
 ## Quick start (local)
 
+**Windows, easiest:** double-click `start_study.bat`. The first time it installs everything, then it starts the site and opens the browser. Keep its window open during sessions.
+
+Or by hand:
+
 ```bash
 python -m venv .venv
 .venv/Scripts/pip install -r requirements-analysis.txt      # on Mac/Linux: .venv/bin/pip
