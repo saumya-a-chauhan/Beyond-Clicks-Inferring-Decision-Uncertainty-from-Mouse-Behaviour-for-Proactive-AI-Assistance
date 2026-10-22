@@ -10,3 +10,4 @@ _server.log
 .pytest_cache/
 analysis/figures/
 .claude/
+*.private.txt

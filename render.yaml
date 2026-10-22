@@ -4,6 +4,7 @@ services:
     name: beyond-clicks-study
     runtime: python
     plan: free
+    region: singapore   # same region as the Neon database (fast queries)
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /healthz
