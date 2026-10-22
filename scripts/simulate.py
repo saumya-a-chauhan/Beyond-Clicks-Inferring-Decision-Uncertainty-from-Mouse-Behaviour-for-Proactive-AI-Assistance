@@ -146,7 +146,7 @@ def walk(client, study, rng, cond_effects=None, verbose=True):
     token = r["token"]
     with db.engine.begin() as c:
         c.execute(db.participants.update().where(db.participants.c.token == token).values(simulated=True))
-    me = client.get(f"/api/me?token={token}").json()
+    me = client.get("/api/me", headers={"X-Token": token}).json()
     hesitant_person = rng.random() < 0.8
     episodes_by_task = {}
 
@@ -210,7 +210,7 @@ def walk(client, study, rng, cond_effects=None, verbose=True):
             client.post(f"/api/task/{t['task_id']}/end", json={"token": token, "chosen": chosen, "decision_ms": int(t_end)})
             step_submit(st, {}, st["task_key"])
         elif kind == "switch":
-            info = client.get(f"/api/task/by-key/{st['task_key']}?token={token}").json()
+            info = client.get(f"/api/task/by-key/{st['task_key']}", headers={"X-Token": token}).json()
             fin = info["chosen"]
             if not fin.endswith("A") and rng.random() < 0.2:
                 fin = fin[:-1] + "A"
@@ -228,7 +228,7 @@ def walk(client, study, rng, cond_effects=None, verbose=True):
             d["condition"] = st["condition"]
             step_submit(st, d, st["task_key"])
         elif kind == "replay":
-            info = client.get(f"/api/task/by-key/{st['task_key']}?token={token}").json()
+            info = client.get(f"/api/task/by-key/{st['task_key']}", headers={"X-Token": token}).json()
             eps = episodes_by_task.get(st["task_key"], [])
             labs = []
             for a, b in eps:

@@ -4,8 +4,9 @@ This guide is for whoever runs a session. Read it fully once before the first pi
 
 ## 0. One-time setup (before any participant)
 
-1. The website is deployed (see [DEPLOY.md](DEPLOY.md)) and you know the **study URL** and the **researcher password**.
-2. Log in at `<study URL>/admin`.
+1. On the study laptop, double-click `start_study.bat` (see the README). The **study URL** is
+   http://localhost:8000 and the **researcher password** is `ADMIN_PASSWORD` in `.env`.
+2. Log in at http://localhost:8000/admin.
 3. **Settings tab → Consent page information:** fill in team names, contact emails, supervisor, the ethics approval
    number (or "pending"), and the reward. Save. This text appears on every participant's consent page.
 4. **Export & tools → Check the AI providers:** both Gemini and Groq should say `ok: true`.
@@ -95,8 +96,8 @@ Unfreezing exists only for serious problems. It needs a written reason, and that
    - questionnaires
    - the order check
 2. **Export & tools → Download ZIP** for an archive of everything.
-3. On a laptop with the analysis packages installed, run `analysis/make_figures.py --study main` (plots 8–22 and the
-   mixed-model statistics). To analyse the cloud data, set `DATABASE_URL` to the Neon connection string first.
+3. On the study laptop, run `.venv\Scripts\python analysis\make_figures.py --study main` (plots 8–22 and the
+   mixed-model statistics). Figures are saved in `analysis/figures/`.
 4. If someone asks for their data to be deleted later: in **Participants**, delete that participant by code.
 
 ## Exclusions (decide before looking at results)
@@ -114,8 +115,8 @@ Excluded participants stay in the export but are left out of analyses.
 
 | Problem | What to do |
 | --- | --- |
-| First page load takes about 50 s | The free cloud server was asleep. Open the site about 2 minutes before the participant arrives. |
-| AI answers say "not available right now" | Both LLM providers failed; written fallback answers are shown. Check keys in Render → Environment, and run the AI provider check. |
+| The page does not open | The website is not running. Double-click `start_study.bat` and keep its window open. |
+| AI answers say "not available right now" | Both LLM providers failed; written fallback answers are shown. Check the keys in `.env` (restart `start_study.bat` after editing it), and run the AI provider check. |
 | "Session not found" | The browser data was cleared. Start a new session; delete or exclude the broken one. |
 | Window too small | Use full screen (F11). The setup check needs at least 1200 px width. |
 | Main study button is locked | Settings are not frozen yet (step 2). |

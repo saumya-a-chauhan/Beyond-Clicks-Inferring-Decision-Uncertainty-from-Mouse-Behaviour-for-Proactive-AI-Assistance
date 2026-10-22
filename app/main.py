@@ -89,6 +89,15 @@ def healthz():
     return {"ok": True}
 
 
+@app.middleware("http")
+async def revalidate_static(request: Request, call_next):
+    # browsers must re-check site files, so an updated version reaches every participant laptop
+    response = await call_next(request)
+    if request.url.path.startswith("/static/") or request.url.path in ("/", "/run", "/admin"):
+        response.headers["Cache-Control"] = "no-cache"
+    return response
+
+
 app.mount("/static", StaticFiles(directory=config.STATIC_DIR), name="static")
 
 

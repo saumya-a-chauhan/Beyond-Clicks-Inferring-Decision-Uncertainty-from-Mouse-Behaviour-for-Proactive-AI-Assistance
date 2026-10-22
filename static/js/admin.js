@@ -288,7 +288,7 @@ function renderMain(r, out) {
       + table([["Detector", v => ({ avg: "Average (main)", max: "Maximum z", B: "Back-and-forth only", I: "Pausing only" })[v]],
         ["AUC at random C4 moments", v => num(r.auc_at_random_moments[v].auc)], ["n yes / no", v => `${r.auc_at_random_moments[v].n_yes} / ${r.auc_at_random_moments[v].n_no}`]], ["avg", "max", "B", "I"]),
       "95% Wilson intervals. The AUC test uses the unbiased random-moment answers (protocol section 8).")}
-    ${box("Claims 2 and 3: speed and decision quality per condition", `<div class="grid2"><canvas id="time"></canvas><canvas id="corr"></canvas></div>` + table([
+    ${box("Claims 2 and 3: speed and decision quality per condition", `<div class="grid2"><div class="chart-cell"><canvas id="time"></canvas></div><div class="chart-cell"><canvas id="corr"></canvas></div></div>` + table([
       ["Condition", c => COND_NAMES[c.condition]], ["n", c => c.n], ["Median time (IQR)", c => `${num(c.median_time_s, 0)} s (${num(c.q1_time_s, 0)}–${num(c.q3_time_s, 0)})`],
       ["Mean rank (1 best, main quality)", c => num(c.mean_rank)], ["% correct [95% CI]", c => `${pct(c.correct)} [${pct(c.correct_lo)}, ${pct(c.correct_hi)}]`],
       ["Switched after full table", c => pct(c.switch_rate)], ["Chose dominated phone", c => pct(c.dominated_rate)]], C)

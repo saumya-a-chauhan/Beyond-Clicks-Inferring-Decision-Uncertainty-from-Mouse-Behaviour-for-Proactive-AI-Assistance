@@ -7,12 +7,28 @@ A web-based experiment platform that watches **how people move the mouse while c
 **No AI, Ask AI (on demand), Smart pop-up (our detector) and Random pop-up (control)**, on decision **speed**
 and decision **quality**, and checks whether the pop-up came when people were really unsure.
 
-Everything runs in one website:
+Everything runs in one website, on **one study laptop** (data never leaves it):
 
-- **Participants** open the site on any laptop, click **Pilot study** or **Main study**, and are guided step by step.
+- **Participants** sit at the laptop, click **Pilot study** or **Main study**, and are guided step by step.
   They never see any data.
 - **Researchers** log in with a password at `/admin` to see participants, run the pilot analysis, **freeze** the
   settings (which unlocks the main study), view results and download all data.
+
+### What does "freeze settings" do?
+
+During the pilot **nothing is adjusted live**: no pop-ups appear and the threshold does not change while people take
+part. The site only records mouse movement and the "I was unsure" replay labels.
+
+When all pilot people are done, a researcher clicks **Run pilot analysis** in the dashboard. That is the moment the
+threshold is **calculated**: the site replays every pilot task through the detector at thresholds 1.0 to 3.0,
+compares the would-be pop-ups with the replay labels, and picks the threshold with the rule written down in advance
+(highest recall with precision at least 70% and at most 1 false alarm per task).
+
+**Freeze** then locks that threshold and every other detector number (with the date) and **unlocks the Main study
+button**. From then on the main study uses exactly those numbers for every participant. You can re-run the pilot
+analysis as often as you like before freezing; after freezing, changing anything needs "Unfreeze" with a written
+reason, which stays in the audit log. This is pre-registration: it shows we did not tune the threshold after seeing
+the main-study results.
 
 ## How the study works
 
@@ -40,35 +56,62 @@ explained: [docs/DETECTOR.md](docs/DETECTOR.md) and [docs/VALUES.md](docs/VALUES
   main results (yes-rates, AUC at random moments, speed, quality, questionnaires), ZIP export.
 - Offline analysis script with 22 figures and mixed-effects models; simulator for testing; unit tests.
 
-## Quick start (local)
+## Quick start (on the study laptop)
 
-**Windows, easiest:** double-click `start_study.bat`. The first time it installs everything, then it starts the site and opens the browser. Keep its window open during sessions.
+You need **Python 3.11 or newer** ([python.org](https://www.python.org/downloads/), tick "Add Python to PATH").
 
-Or by hand:
+**Windows, easiest:** double-click `start_study.bat`. The first time it creates the Python environment and installs
+everything (a few minutes), then it starts the site and opens the browser. Keep its window open during sessions;
+close it to stop the site.
 
-```bash
+**Or by hand** (PowerShell, inside the project folder):
+
+```powershell
 python -m venv .venv
-.venv/Scripts/pip install -r requirements-analysis.txt      # on Mac/Linux: .venv/bin/pip
-cp .env.example .env                                         # then fill in the values
-.venv/Scripts/python -m uvicorn app.main:app --port 8000
+.venv\Scripts\pip install -r requirements-analysis.txt
+copy .env.example .env        # first time only, then open .env and fill in the password and API keys
+.venv\Scripts\python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
 ```
 
-Open http://localhost:8000 (participants) and http://localhost:8000/admin (researchers).
+Then open:
 
-To run the study from **any teammate's laptop**, deploy it once to the cloud: [docs/DEPLOY.md](docs/DEPLOY.md).
+- http://localhost:8000 for participants (Pilot study / Main study buttons)
+- http://localhost:8000/admin for researchers (password = `ADMIN_PASSWORD` in `.env`)
+
+All data is saved in `hti_study.db` in this folder. Back it up (copy the file) after every session day, and
+download a ZIP from the dashboard (**Export & tools**) for analysis.
+
+## Sharing the project with teammates
+
+Do **not** zip the whole folder: `.venv` is about 500 MB and only works on this PC, `hti_study.db` holds participant
+data, and `.env` holds the password and API keys. Make a clean code-only ZIP instead:
+
+```powershell
+git archive -o Beyond-Clicks-code.zip HEAD
+```
+
+Teammates unzip it, copy `.env.example` to `.env`, fill in their own values, and run `start_study.bat`. To share the
+**data**, send the ZIP from the dashboard's **Export & tools** tab (participant codes only, no names).
+
+A cloud version (Render + Neon) is possible later; see [docs/DEPLOY.md](docs/DEPLOY.md). It is not needed for a
+single study laptop.
 
 ## Testing without real people
 
-```bash
-# fake pilot (10 people, last 3 with the AI check), analyse + freeze, then 24 fake main participants
-.venv/Scripts/python scripts/simulate.py --pilot 10 --ai-check 3 --freeze --main 24
-.venv/Scripts/python analysis/make_figures.py --study pilot --include-simulated
-.venv/Scripts/python analysis/make_figures.py --study main --include-simulated
-.venv/Scripts/python -m pytest -q tests
+Always use a **separate test database**, so fake people never mix with real ones (PowerShell):
+
+```powershell
+$env:DATABASE_URL = "sqlite:///./test.db"; $env:LLM_DISABLED = "1"
+# 10 fake pilot people (last 3 with the AI check), analyse + freeze, then 24 fake main-study people
+.venv\Scripts\python scripts\simulate.py --pilot 10 --ai-check 3 --freeze --main 24
+.venv\Scripts\python analysis\make_figures.py --study pilot --include-simulated
+.venv\Scripts\python analysis\make_figures.py --study main --include-simulated
+# look at the test site and dashboard with the fake data
+.venv\Scripts\python -m uvicorn app.main:app --port 8001
+# when finished: close PowerShell (clears the variables) and delete test.db
 ```
 
-Use a separate test database for this (`DATABASE_URL=sqlite:///./test.db`), or delete simulated participants in the
-dashboard (Export & tools) before the real study. Never freeze the real study on simulated data.
+`.venv\Scripts\python -m pytest -q tests` runs the unit tests. Never freeze the real study on simulated data.
 
 ## Project structure
 

@@ -7,10 +7,10 @@ Two places:
 
 Both read the same database.
 
-```bash
-# analyse the cloud data: set DATABASE_URL to the Neon connection string first
-.venv/Scripts/python analysis/make_figures.py --study pilot
-.venv/Scripts/python analysis/make_figures.py --study main
+```powershell
+# reads hti_study.db in the project folder
+.venv\Scripts\python analysis\make_figures.py --study pilot
+.venv\Scripts\python analysis\make_figures.py --study main
 ```
 
 Figures go to `analysis/figures/`, with statistics in `stats_pilot.txt` and `stats_main.txt`.

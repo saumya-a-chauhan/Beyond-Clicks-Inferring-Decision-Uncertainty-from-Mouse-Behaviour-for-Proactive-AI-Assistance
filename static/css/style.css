@@ -209,3 +209,4 @@ pre.json { background: #0f172a; color: #e2e8f0; padding: 14px; border-radius: 10
 @media (max-width: 900px) {
   .choices, .grid2 { grid-template-columns: 1fr; }
 }
+.chart-cell { position: relative; min-width: 0; }
