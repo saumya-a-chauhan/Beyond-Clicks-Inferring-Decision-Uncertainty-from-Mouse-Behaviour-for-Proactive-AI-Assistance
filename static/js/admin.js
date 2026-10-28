@@ -453,4 +453,37 @@ function renderMain(r, out) {
     options: { scales: { x: { title: { display: true, text: "Seconds from pop-up" } }, y: { beginAtZero: true, title: { display: true, text: "Hesitation score" } } } } });
 }
 
+// Every dashboard download (Excel, CSV, ZIP, backup) is fetched and saved explicitly, so it works the same in every
+// browser and shows a message instead of silently doing nothing (e.g. when the login has expired).
+async function downloadFile(url, btn) {
+  const label = btn ? btn.textContent : "";
+  if (btn) { btn.textContent = "Preparing download…"; btn.classList.add("busy"); }
+  try {
+    const r = await fetch(url, { credentials: "same-origin" });
+    if (r.status === 401) throw new Error("Your login has expired. Reload the page and log in again.");
+    if (!r.ok) throw new Error(`Download failed (error ${r.status}).`);
+    const disp = r.headers.get("content-disposition") || "";
+    const m = disp.match(/filename="?([^";]+)"?/);
+    const name = m ? m[1] : url.split("/").pop().split("?")[0];
+    const blob = await r.blob();
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 60000);
+  } catch (e) {
+    alert(e.message + "\n\nIf downloads never start, open this dashboard in Chrome or Edge (http://localhost:8000/admin).");
+  } finally {
+    if (btn) { btn.textContent = label; btn.classList.remove("busy"); }
+  }
+}
+document.addEventListener("click", e => {
+  const a = e.target.closest('a[href^="/api/admin/"]');
+  if (!a) return;
+  e.preventDefault();
+  downloadFile(a.getAttribute("href"), a);
+});
+
 boot();
