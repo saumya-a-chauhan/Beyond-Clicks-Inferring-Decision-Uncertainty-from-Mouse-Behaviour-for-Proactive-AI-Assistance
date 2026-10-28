@@ -26,7 +26,7 @@ During the session:
 
 1. Click **Start pilot study** and hand the laptop to the participant.
 2. They go through the steps themselves:
-   1. consent and setup check
+   1. consent, "About you" (age and gender, no name) and setup check
    2. 2 warm-ups
    3. 4 rounds without AI
    4. the **replay** of each round (holding SPACE while they remember feeling unsure)
@@ -75,7 +75,7 @@ Unfreezing exists only for serious problems. It needs a written reason, and that
      all 4 orders, so each condition appears equally often in each position.
    - **Phone sets:** rotated so that each condition is paired with each set once per block.
 2. The participant goes through these steps:
-   1. consent and setup check
+   1. consent, "About you" (age and gender, no name) and setup check
    2. 2 warm-ups and a practice round, which shows an example pop-up and the Ask AI button
    3. 4 rounds. Before each round, one screen says what kind of help there is. Smart and Random look identical to
       the participant.

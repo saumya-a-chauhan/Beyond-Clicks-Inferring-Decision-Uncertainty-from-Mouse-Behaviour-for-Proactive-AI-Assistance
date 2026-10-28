@@ -244,6 +244,9 @@ def walk(client, study, rng, cond_effects=None, verbose=True):
             conds = [r["condition"] for r in st["rounds"]]
             pref = sorted(conds, key=lambda c: {"C3": 0, "C2": 1, "C4": 2, "C1": 3}[c] + rng.uniform(-1.2, 1.2))
             step_submit(st, {"ranks": {c: i + 1 for i, c in enumerate(pref)}})
+        elif kind == "demographics":
+            step_submit(st, {"age": rng.randint(18, 30), "gender": rng.choice(["woman", "man", "non-binary", "prefer-not"]),
+                             "gender_self": ""})
         elif kind == "interview":
             step_submit(st, {"q1": "simulated", "q2": "", "q3": ""})
         else:

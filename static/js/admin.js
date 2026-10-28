@@ -94,6 +94,7 @@ const TABS = {
       ${table([
         ["Code", p => `<b>${esc(p.code)}</b>${p.simulated ? ' <span class="pill warn">sim</span>' : ""}${p.excluded ? ' <span class="pill bad">excluded</span>' : ""}`],
         ["Study", p => esc(p.study) + (p.pilot_ai_check ? " + AI check" : "")],
+        ["Age / gender", p => p.age == null ? '<span class="muted">–</span>' : `${esc(p.age)} / ${esc(p.gender || "–")}`],
         ["Status", p => esc(p.status)],
         ["Step", p => `${esc(p.step)}<br><span class="small muted">${esc(p.current)}</span>`],
         ["Order", p => p.study === "main" ? esc((p.condition_order || []).map(c => COND_NAMES[c]).join(" → ")) + `<br><span class="small muted">${esc((p.set_order || []).join(" "))}</span>` : `<span class="small muted">${esc((p.set_order || []).join(" "))}</span>`],
@@ -164,8 +165,8 @@ const TABS = {
         <div id="dl-out"></div></div>
       <div class="panel"><h2>Study data (CSV)</h2>
         <p><b>Download CSV</b> saves everything recorded in this study in one file: every participant and round, the mouse movement, the answers, the pop-ups, the replay labels and the settings (including the freeze).</p>
-        <p><b>Upload CSV</b> loads such a file, for example the one from the laptop that ran the experiment. After loading, every page of this dashboard uses the data from the file:
-        participants, the pilot analysis and freeze, the main-study results, the Excel download, and <code>analysis/make_figures.py</code>.</p>
+        <p><b>Upload CSV</b> loads such a file, for example the one from the laptop that ran the experiment. It <b>overrides all study data on this laptop</b>: after loading, every page of this dashboard uses only the data from the file
+        (participants, the pilot analysis and freeze, the main-study results, the Excel download) and so does <code>analysis/make_figures.py</code>.</p>
         <p class="small muted">Upload the CSV exactly as it was downloaded; do not open and save it in Excel first. A backup is saved automatically before loading (Backups &amp; tools).</p>
         <div class="actions" style="justify-content:flex-start;flex-wrap:wrap">
           <button class="primary" id="csv-dl">Download CSV</button>
@@ -179,7 +180,7 @@ const TABS = {
         <div id="v-loaded"></div><div id="v-sum"></div><div id="v-table"></div></div>`;
     const simQ = () => `include_sim=${view.querySelector("#dl-sim").checked ? 1 : 0}`;
     let study = "pilot", sheet = null;
-    const KEY = ["site", "participant", "status", "round", "condition_name", "phone_set", "decision_time_s", "correct", "rank", "switched", "popups_shown", "unsure_yes", "confidence"];
+    const KEY = ["site", "participant", "age", "gender", "status", "round", "condition_name", "phone_set", "decision_time_s", "correct", "rank", "switched", "popups_shown", "unsure_yes", "confidence"];
     const cell = v => v === true ? "✓" : v === false ? "✗" : v == null ? "" : esc(v);
     const med = a => {
       const s = a.filter(x => x != null).sort((x, y) => x - y);
@@ -195,7 +196,16 @@ const TABS = {
       const ld = sheet.loaded;
       view.querySelector("#v-loaded").innerHTML = ld
         ? `<p class="small muted">Data from <b>${esc(ld.filename)}</b> (laptop ${esc(ld.from_site || "?")}, downloaded ${esc((ld.exported_at || "").replace("T", " "))}), loaded ${esc((ld.loaded_at || "").replace("T", " "))}.</p>` : "";
-      view.querySelector("#v-sum").innerHTML = `<p><b>${rows.length}</b> rows from <b>${people}</b> participants.</p>` + (rows.length ? table([
+      const persons = {};
+      rows.forEach(r => { persons[`${r.site}|${r.participant}`] = r; });
+      const ages = Object.values(persons).map(r => r.age).filter(a => a != null);
+      const mean = ages.length ? ages.reduce((a, b) => a + b, 0) / ages.length : null;
+      const sd = ages.length > 1 ? Math.sqrt(ages.reduce((a, b) => a + (b - mean) ** 2, 0) / (ages.length - 1)) : null;
+      const gcount = {};
+      Object.values(persons).forEach(r => { const g = r.gender || "not given"; gcount[g] = (gcount[g] || 0) + 1; });
+      const demoLine = ages.length
+        ? `<p class="small">Age: mean <b>${num(mean, 1)}</b>${sd != null ? ` (SD ${num(sd, 1)})` : ""}, range ${Math.min(...ages)}–${Math.max(...ages)} · Gender: ${Object.entries(gcount).map(([g, n]) => `${esc(g)} ${n}`).join(", ")}</p>` : "";
+      view.querySelector("#v-sum").innerHTML = `<p><b>${rows.length}</b> rows from <b>${people}</b> participants.</p>` + demoLine + (rows.length ? table([
         ["Condition", c => esc(c)], ["Rounds", c => byC[c].length],
         ["% correct (first choice)", c => { const v = byC[c].filter(r => r.correct != null); return v.length ? `${Math.round(100 * v.filter(r => r.correct).length / v.length)}%` : "–"; }],
         ["Median time (s)", c => num(med(byC[c].map(r => r.decision_time_s)), 1)],
@@ -222,7 +232,7 @@ const TABS = {
       const f = view.querySelector("#csv-file").files[0];
       const out = view.querySelector("#csv-out");
       if (!f) { out.innerHTML = '<p class="notice">Choose the CSV file first.</p>'; return; }
-      if (!confirm(`Load the study data from "${f.name}"? The dashboard will then show the data from this file.`)) return;
+      if (!confirm(`Upload "${f.name}"?\n\nAll study data on this laptop will be OVERRIDDEN by the data in this file (participants, results, pilot analysis, freeze). A backup of the current data is saved first.`)) return;
       const btn = e.target; btn.disabled = true;
       out.innerHTML = '<p class="muted">Loading… (large files can take a minute)</p>';
       try {
@@ -231,9 +241,10 @@ const TABS = {
         const d = ct.includes("json") ? await r.json() : { detail: await r.text() };
         if (!r.ok) throw new Error(d.detail || `Upload failed (${r.status})`);
         const c = d.counts || {};
-        out.innerHTML = `<div class="notice good">Loaded <b>${esc(d.filename)}</b> from laptop <b>${esc(d.from_site || "?")}</b>:
-          ${c.participants || 0} participants, ${c.tasks || 0} rounds and tasks, ${c.event_batches || 0} blocks of mouse data, ${c.responses || 0} answers.
-          All dashboard pages now use this data.</div>`;
+        out.innerHTML = `<div class="notice good"><b>Data overridden.</b> All study data on this laptop has been replaced by <b>${esc(d.filename)}</b> (from laptop <b>${esc(d.from_site || "?")}</b>):
+          ${c.participants || 0} participants, ${c.tasks || 0} rounds and tasks, ${c.event_batches || 0} blocks of mouse data, ${c.responses || 0} answers.<br>
+          From now on every page uses only this data: Participants, Pilot analysis &amp; freeze, Main study results, the Excel download and <code>analysis/make_figures.py</code>.
+          The previous data is kept as a backup (Backups &amp; tools).</div>`;
         view.querySelector("#csv-file").value = "";
         load();
       } catch (err) { out.innerHTML = `<div class="notice bad">${esc(err.message)}</div>`; }

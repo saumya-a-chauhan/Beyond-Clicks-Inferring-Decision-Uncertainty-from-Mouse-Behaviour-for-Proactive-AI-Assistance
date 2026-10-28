@@ -179,6 +179,9 @@ class StepBody(BaseModel):
     data: dict = {}
 
 
+GENDERS = ("woman", "man", "non-binary", "self-describe", "prefer-not")
+
+
 @app.post("/api/step")
 def api_step(body: StepBody, background: BackgroundTasks):
     with db.engine.begin() as conn:
@@ -195,6 +198,10 @@ def api_step(body: StepBody, background: BackgroundTasks):
             upd["step_index"] = len(plan) - 1
         if body.kind == "device_check":
             upd["device"] = db.dumps(body.data)
+        if body.kind == "demographics":
+            age, gender = body.data.get("age"), body.data.get("gender")
+            if not isinstance(age, int) or not 18 <= age <= 100 or gender not in GENDERS:
+                raise HTTPException(400, "Please enter an age of 18 or older and choose a gender option.")
         if upd["step_index"] >= len(plan) - 1 and upd.get("status") != "declined":
             upd["status"] = "completed"
         conn.execute(db.participants.update().where(db.participants.c.id == p["id"]).values(**upd))
@@ -578,6 +585,8 @@ def admin_participants():
         tasks = [dict(r._mapping) for r in conn.execute(select(
             db.tasks.c.participant_id, db.tasks.c.task_key, db.tasks.c.condition, db.tasks.c.correct,
             db.tasks.c.decision_ms, db.tasks.c.set_id))]
+        demo = {r.participant_id: db.loads(r.data, {}) or {} for r in conn.execute(
+            select(db.responses.c.participant_id, db.responses.c.data).where(db.responses.c.kind == "demographics"))}
         nlab = dict(conn.execute(select(db.tasks.c.participant_id, func.count(db.labels.c.id))
                                  .join(db.labels, db.labels.c.task_id == db.tasks.c.id)
                                  .group_by(db.tasks.c.participant_id)).all())
@@ -594,6 +603,9 @@ def admin_participants():
                     "pilot_ai_check": p["pilot_ai_check"], "excluded": p["excluded"], "simulated": p["simulated"],
                     "notes": p["notes"], "created_at": str(p["created_at"]), "labels": nlab.get(p["id"], 0),
                     "device": db.loads(p["device"]),
+                    "age": demo.get(p["id"], {}).get("age"),
+                    "gender": (demo.get(p["id"], {}).get("gender_self") or "self-describe")
+                    if demo.get(p["id"], {}).get("gender") == "self-describe" else demo.get(p["id"], {}).get("gender"),
                     "tasks": sorted([{"key": t["task_key"], "cond": t["condition"], "set": t["set_id"],
                                       "correct": t["correct"], "time_s": (t["decision_ms"] or 0) / 1000}
                                      for t in by_p.get(p["id"], [])], key=lambda x: x["key"])})

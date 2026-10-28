@@ -120,7 +120,7 @@ const STEPS = {
       <h2>${esc(INFO.title)}: information and consent</h2>
       <p><b>What is this study about?</b> We study how people choose between products online, and how an assistant could help at the right moment.</p>
       <p><b>What will I do?</b> Shop for phones on this website (fictional phones, no real money) and answer short questions. It takes ${esc(dur)}.</p>
-      <p><b>What is recorded?</b> Your mouse movements, scrolling and clicks on this website, your choices and your answers. <b>No camera, no microphone, no name.</b> You are identified only by a code (${esc(S.code)}).</p>
+      <p><b>What is recorded?</b> Your age and gender, your mouse movements, scrolling and clicks on this website, your choices and your answers. <b>No camera, no microphone, no name.</b> You are identified only by a code (${esc(S.code)}).</p>
       <p><b>Your rights.</b> Taking part is voluntary. You can stop at any time without giving a reason, and ask for your data to be deleted.</p>
       <p><b>Who are we?</b> ${esc(INFO.team)}. Supervisor: ${esc(INFO.supervisor)}. Contact: ${esc(INFO.contact)}. ${esc(INFO.irb)}.</p>
       <p><b>Reward.</b> ${esc(INFO.reward)}</p>
@@ -135,6 +135,29 @@ const STEPS = {
       if (!confirm("You will not take part. Is that right?")) return;
       await submit({ agree: false });
       Session.clear();
+    };
+  },
+
+  demographics(st) {
+    const genders = [["woman", "Woman"], ["man", "Man"], ["non-binary", "Non-binary"], ["self-describe", "Prefer to self-describe"], ["prefer-not", "Prefer not to say"]];
+    const p = page(`
+      <h2>About you</h2>
+      <p class="muted">Two short questions. We do not ask for your name.</p>
+      <div class="q"><label class="qtext" for="age">Your age (in years)</label>
+        <input type="number" id="age" min="18" max="100" step="1" inputmode="numeric" style="max-width:160px"></div>
+      <div class="q"><div class="qtext">Your gender</div>
+        ${genders.map(([v, l]) => `<label class="check"><input type="radio" name="gender" value="${v}"> ${l}</label>`).join("")}
+        <input type="text" id="gself" maxlength="40" placeholder="Please describe" style="max-width:280px;display:none;margin-top:6px"></div>
+      <div class="actions"><button class="primary big" id="go">Continue</button></div>`);
+    const self = p.querySelector("#gself");
+    p.querySelectorAll('input[name="gender"]').forEach(r => r.onchange = () => { self.style.display = r.value === "self-describe" && r.checked ? "block" : "none"; });
+    p.querySelector("#go").onclick = () => {
+      const age = Number(p.querySelector("#age").value);
+      const g = p.querySelector('input[name="gender"]:checked');
+      if (!Number.isInteger(age) || age < 18 || age > 100) { alert("Please enter your age as a whole number (18 or older)."); return; }
+      if (!g) { alert("Please choose an option for gender (you can choose 'Prefer not to say')."); return; }
+      if (g.value === "self-describe" && !self.value.trim()) { alert("Please describe your gender, or choose another option."); return; }
+      submit({ age, gender: g.value, gender_self: g.value === "self-describe" ? self.value.trim() : "" });
     };
   },
 

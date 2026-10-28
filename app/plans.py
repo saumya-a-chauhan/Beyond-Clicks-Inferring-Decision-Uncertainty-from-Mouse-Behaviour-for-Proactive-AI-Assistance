@@ -17,6 +17,7 @@ MAIN_INTERVIEW = [
 def pilot_plan(set_order, ai_check):
     steps = [
         {"key": "consent", "kind": "consent"},
+        {"key": "about", "kind": "demographics"},
         {"key": "device", "kind": "device_check"},
         {"key": "intro", "kind": "instructions", "page": "pilot_intro"},
         {"key": "baseline1", "kind": "task", "task_key": "baseline1", "task_kind": "baseline1", "set": "P", "condition": "C1"},
@@ -48,6 +49,7 @@ def pilot_plan(set_order, ai_check):
 def main_plan(cond_order, set_order):
     steps = [
         {"key": "consent", "kind": "consent"},
+        {"key": "about", "kind": "demographics"},
         {"key": "device", "kind": "device_check"},
         {"key": "intro", "kind": "instructions", "page": "main_intro"},
         {"key": "baseline1", "kind": "task", "task_key": "baseline1", "task_kind": "baseline1", "set": "P", "condition": "C1"},

@@ -86,7 +86,7 @@ button:disabled { opacity: .45; cursor: not-allowed; }
 
 /* ---------- forms ---------- */
 label { display: block; font-weight: 600; margin: 14px 0 6px; }
-input[type=text], input[type=password], textarea, select {
+input[type=text], input[type=password], input[type=number], textarea, select {
   font: inherit; width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: #fff;
 }
 textarea { min-height: 90px; resize: vertical; }

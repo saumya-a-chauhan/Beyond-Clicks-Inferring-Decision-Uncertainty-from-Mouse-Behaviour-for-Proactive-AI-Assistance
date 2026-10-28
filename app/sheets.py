@@ -29,6 +29,8 @@ COLUMNS = [
     ("excluded", "TRUE if a researcher excluded this person"),
     ("simulated", "TRUE for fake test data"),
     ("date", "Date of the session (YYYY-MM-DD)"),
+    ("age", "Age in years (from the 'About you' step)"),
+    ("gender", "woman, man, non-binary, prefer-not, or the participant's own words"),
     ("round", "Shopping round number (1-4; 5 = pilot AI check)"),
     ("task_key", "Internal round id (t1-t4, ai)"),
     ("condition", "C1 No AI, C2 Ask AI, C3 Smart pop-up, C4 Random pop-up"),
@@ -116,6 +118,8 @@ def local_rows(study, include_sim=False):
                     sus_by_cond[d["condition"]] = sus_score(d)
                 if r.kind == "ranking":
                     ranks = d.get("ranks") or {}
+            demo = resp.get(("demographics", None), {})
+            gender = demo.get("gender_self") or demo.get("gender") if demo.get("gender") == "self-describe" else demo.get("gender")
             for t in tasks:
                 pops = [dict(r._mapping) for r in conn.execute(select(db.popups).where(db.popups.c.task_id == t["id"]))]
                 n_ai = len(conn.execute(select(db.ai_requests.c.id).where(db.ai_requests.c.task_id == t["id"])).all())
@@ -128,6 +132,7 @@ def local_rows(study, include_sim=False):
                     "site": site, "participant": p["code"], "study": study, "status": p["status"],
                     "excluded": bool(p["excluded"]), "simulated": bool(p["simulated"]),
                     "date": p["created_at"].date().isoformat() if p["created_at"] else None,
+                    "age": _num(demo.get("age")), "gender": gender,
                     "round": t["position"], "task_key": t["task_key"], "condition": cond,
                     "condition_name": CONDITIONS.get(cond, {}).get("name", cond), "phone_set": t["set_id"],
                     "decision_time_s": round(t["decision_ms"] / 1000, 2) if t["decision_ms"] is not None else None,

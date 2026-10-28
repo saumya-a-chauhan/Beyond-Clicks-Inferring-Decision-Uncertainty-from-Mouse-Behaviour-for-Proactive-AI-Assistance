@@ -83,7 +83,7 @@
     <li>Say: <i>"Everything is explained on the screen. Choose the phone you think is best for the person on the card, as if you were really buying it. I'll be nearby if something breaks, but I can't help with the choice."</i> Then step back.</li>
     <li>The participant goes through, on their own:
       <ol>
-        <li>consent and setup check</li>
+        <li>consent, "About you" (age and gender, no name) and setup check</li>
         <li>2 short warm-up tasks</li>
         <li>4 shopping rounds with <b>no AI</b>, each followed by a "do you want to change your choice?" table and a confidence question</li>
         <li>a <b>replay</b> of each round: they watch a dot that redraws their own mouse and <b>hold the SPACE bar</b> whenever they remember feeling unsure</li>
@@ -131,7 +131,7 @@
   <ol>
     <li>Start page → <b>Start main study</b>. The site gives the code (M01, M02, …) and <b>automatically picks the order</b> of the 4 versions (No AI, Ask AI, Smart pop-up, Random pop-up). The order is random for each person but balanced overall, so you do nothing.</li>
     <li>Same short introduction as in the pilot, then step back.</li>
-    <li>The participant does: consent and setup check → 2 warm-ups → a practice round (shows an example pop-up and the Ask AI button) → 4 rounds, each with a short questionnaire → usability questions → ranking → 3 questions → <b>debrief</b>.</li>
+    <li>The participant does: consent → "About you" (age and gender) → setup check → 2 warm-ups → a practice round (shows an example pop-up and the Ask AI button) → 4 rounds, each with a short questionnaire → usability questions → ranking → 3 questions → <b>debrief</b>.</li>
     <li><b>Never tell anyone before the debrief that one round has random pop-ups.</b> The debrief screen explains it and offers to delete their data.</li>
     <li>Goal: <b>24 completed</b> participants. The design balances in groups of 4, so 24 is ideal. If someone stops early, just continue with the next person and note it.</li>
   </ol>
@@ -150,7 +150,7 @@
     <tr><th>Button</th><th>What it does</th><th>Who uses it</th></tr>
     <tr><td><b>Download Excel (Pilot + Main)</b></td><td>Results to read: a Pilot sheet and a Main sheet (one row per participant and round) and an About sheet explaining each column. Always up to date.</td><td>Everyone, to look at results.</td></tr>
     <tr><td><b>Download CSV</b></td><td>The complete study data in one file: participants, rounds, mouse movement, answers, pop-ups, replay labels and settings (including the freeze).</td><td>The experiment laptop, to send the data to Saumya.</td></tr>
-    <tr><td><b>Upload CSV</b></td><td>Loads such a CSV. After that every dashboard page (participants, pilot analysis, freeze, results, Excel) and the analysis script use the data from the file. A backup is saved first.</td><td>Saumya's laptop, for the analysis.</td></tr>
+    <tr><td><b>Upload CSV</b></td><td><b>Overrides all study data on that laptop</b> with the data in the CSV. After that every dashboard page (participants, pilot analysis, freeze, results, Excel) and the analysis script use only the uploaded data, and a "Data overridden" message confirms it. A backup of the previous data is saved first.</td><td>Saumya's laptop, for the analysis.</td></tr>
   </table>
   <ul>
     <li><b>On the experiment laptop, only ever press Download CSV, never Upload CSV.</b> That laptop's own recordings are the real study data.</li>

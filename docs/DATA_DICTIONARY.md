@@ -4,7 +4,7 @@
 
 The Excel download has a **Pilot** and a **Main** sheet with the same columns, one row per participant and shopping
 round, and an **About** sheet that explains every column (the list lives in `app/sheets.py`). Key columns:
-`site` (laptop that recorded the data), `participant`, `round`, `condition`, `decision_time_s`, `correct`, `rank`,
+`site` (laptop that recorded the data), `participant`, `age`, `gender` (from the "About you" step), `round`, `condition`, `decision_time_s`, `correct`, `rank`,
 `switched`, pop-up counts, confidence, NASA-TLX, SAM, help ratings, trust, SUS, preference rank.
 
 ## Study-data CSV (dashboard → Data & Excel → Download CSV / Upload CSV)
@@ -15,8 +15,8 @@ dates are `{"$dt": iso}`, binary data (gzipped mouse events, detector ticks) is 
 30,000 characters are split over several lines (`part` of `parts`). The `_meta` line holds the format version, the
 source laptop and the number of rows per table; a file whose counts do not match (cut off or edited) is refused before
 anything changes. Session tokens are never exported; the laptop name (`site_name` setting) stays with each laptop.
-Loading a file makes the database hold exactly the file's data (a backup is made first), so every page and analysis
-uses it.
+Loading a file **overrides** all study data on the receiving laptop: the database then holds exactly the file's data
+(a backup is made first), so every page and analysis uses only it, and the dashboard says "Data overridden".
 
 ## Raw data ZIP
 
@@ -124,3 +124,10 @@ One row per completed screen. `kind` says which screen, and `data` holds the ans
 
 The current settings (detector, frozen state, assignment slots, pilot analysis summary) and a log of researcher
 actions (freeze, unfreeze, exclusions, deletions, detector edits).
+
+## About-you answers (responses.csv, kind = demographics)
+
+`age` (whole number, 18 to 100), `gender` (`woman`, `man`, `non-binary`, `self-describe`, `prefer-not`) and
+`gender_self` (the participant's own words when they chose self-describe). Collected right after consent; no name is
+ever asked. The server refuses missing or invalid answers.
+

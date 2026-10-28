@@ -151,7 +151,7 @@ docs/             protocol, detector, values, data dictionary, deployment, proje
 
 ## Data and privacy
 
-No names, camera or microphone. Participants get a code (P01, M01). Cursor data, choices and answers are stored in the
+No names, camera or microphone; only age and gender are asked. Participants get a code (P01, M01). Cursor data, choices and answers are stored in the
 study database; only researchers with the password can see or export them. Participants can delete their own data at
 the end. API keys and the password live in environment variables, never in the code. See
 [docs/DATA_DICTIONARY.md](docs/DATA_DICTIONARY.md).

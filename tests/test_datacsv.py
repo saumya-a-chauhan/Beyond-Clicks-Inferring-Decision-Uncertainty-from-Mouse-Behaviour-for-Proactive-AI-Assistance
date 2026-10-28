@@ -40,10 +40,17 @@ def test_round_trip_and_refusals(monkeypatch):
         datacsv.load_csv(data[: len(data) // 2], "cut.csv")
     assert _counts() == before                            # refused files change nothing
 
-    _add_person("PX2")                                    # this laptop's own extra data
+    _add_person("PX2")                                    # this laptop's own extra data ...
+    db.set_setting("frozen", {"frozen": True, "threshold": 9.9})          # ... and its own freeze
+    db.set_setting("site_name", "laptop-B")
     info = datacsv.load_csv(data, "good.csv")
     assert info["from_site"] == "laptop-A"
-    assert _counts() == before                            # exactly the file's data afterwards
+    assert _counts() == before                            # exactly the file's data afterwards (PX2 is gone)
+    with db.engine.connect() as c:
+        codes = set(c.execute(select(db.participants.c.code)).scalars())
+    assert "PX2" not in codes and "PX1" in codes
+    assert db.get_setting("frozen") is None               # the receiving laptop's freeze was overridden too
+    assert db.get_setting("site_name") == "laptop-B"      # only the laptop's own name stays
     with db.engine.connect() as c:
         blob = c.execute(select(db.event_batches.c.data)).scalars().first()
         tok = c.execute(select(db.participants.c.token)).scalars().first()
