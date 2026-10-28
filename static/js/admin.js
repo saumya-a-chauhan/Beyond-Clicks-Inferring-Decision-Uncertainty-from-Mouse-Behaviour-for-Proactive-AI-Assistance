@@ -15,6 +15,34 @@ function table(cols, rows, rowClass) {
     ${rows.map(r => `<tr class="${rowClass ? rowClass(r) : ""}">${cols.map(c => `<td>${c[1](r)}</td>`).join("")}</tr>`).join("")}</table></div>`;
 }
 
+async function downloadFile(url, fallbackName, btn, out) {
+  const label = btn ? btn.textContent : "";
+  if (btn) { btn.disabled = true; btn.textContent = "Preparing…"; }
+  if (out) out.innerHTML = "";
+  try {
+    const r = await fetch(url, { credentials: "same-origin" });
+    if (r.status === 401) throw new Error("Your login has expired. Reload the page and log in again.");
+    if (!r.ok) {
+      let msg = `Download failed (${r.status})`;
+      try { const d = await r.json(); if (d.detail) msg = d.detail; } catch (e) { /* not JSON */ }
+      throw new Error(msg);
+    }
+    const blob = await r.blob();
+    const cd = r.headers.get("content-disposition") || "";
+    const m = cd.match(/filename="?([^";]+)"?/);
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = m ? m[1] : fallbackName;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 60000);
+    if (out) out.innerHTML = `<p class="small muted">Saved <b>${esc(a.download)}</b> to your Downloads folder.</p>`;
+  } catch (e) {
+    if (out) out.innerHTML = `<div class="notice bad">${esc(e.message)}</div>`; else alert(e.message);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = label; }
+  }
+}
+
 async function boot() {
   try { await API.get("/api/admin/overview"); showDash(); }
   catch (e) { document.getElementById("login").classList.remove("hidden"); }
@@ -127,39 +155,31 @@ const TABS = {
   async data() {
     clearCharts();
     view.innerHTML = `
-      <div class="panel"><h2>Download results sheet</h2>
-        <p>One row per participant and shopping round. The Excel file has a <b>Pilot</b> sheet and a <b>Main</b> sheet with the same columns, plus an <b>About</b> sheet explaining every column.
-        It is built fresh from the data each time, so new participants are always included.</p>
-        <label class="check"><input type="checkbox" id="dl-imp" checked> Use the uploaded sheet (untick to see only the live data recorded on this laptop)</label>
+      <div class="panel"><h2>Results (Excel)</h2>
+        <p>One row per participant and shopping round: a <b>Pilot</b> sheet, a <b>Main</b> sheet, and an <b>About</b> sheet explaining every column.
+        It is built from the current data each time, so every participant so far is included.</p>
         <label class="check"><input type="checkbox" id="dl-sim"> Include simulated (test) participants</label>
+        <div class="actions" style="justify-content:flex-start">
+          <button class="primary" id="dl-xlsx">Download Excel (Pilot + Main)</button></div>
+        <div id="dl-out"></div></div>
+      <div class="panel"><h2>Study data (CSV)</h2>
+        <p><b>Download CSV</b> saves everything recorded in this study in one file: every participant and round, the mouse movement, the answers, the pop-ups, the replay labels and the settings (including the freeze).</p>
+        <p><b>Upload CSV</b> loads such a file, for example the one from the laptop that ran the experiment. After loading, every page of this dashboard uses the data from the file:
+        participants, the pilot analysis and freeze, the main-study results, the Excel download, and <code>analysis/make_figures.py</code>.</p>
+        <p class="small muted">Upload the CSV exactly as it was downloaded; do not open and save it in Excel first. A backup is saved automatically before loading (Backups &amp; tools).</p>
         <div class="actions" style="justify-content:flex-start;flex-wrap:wrap">
-          <a class="btn primary" id="dl-xlsx" href="#">Download Excel (Pilot + Main)</a>
-          <a class="btn" id="dl-pcsv" href="#">Pilot CSV</a>
-          <a class="btn" id="dl-mcsv" href="#">Main CSV</a></div></div>
-      <div class="panel"><h2>Upload an Excel sheet (replaces the current sheet)</h2>
-        <p>Upload an Excel file with the same columns as the download (sheets <b>Pilot</b> and <b>Main</b>), or a CSV with the same columns and a <b>study</b> column.
-        The upload <b>overwrites</b> the current sheet: everything recorded up to now is shown exactly as it is in the file (edited values are kept, rows you deleted stay hidden), and it replaces any earlier upload.
-        Every round recorded on this laptop <b>after</b> the upload (new participants) is added below it automatically.</p>
-        <p class="small muted">A CSV with only one study replaces only that study. A backup is made before every upload.
-        The pilot threshold analysis, the freeze and the main-study charts always use the raw data recorded on this laptop, not the uploaded sheet, because they need the mouse movement.</p>
-        <input type="file" id="up-file" accept=".xlsx,.csv">
-        <div class="actions" style="justify-content:flex-start"><button class="primary" id="up-go">Upload</button></div>
-        <div id="up-out"></div><div id="up-list"></div></div>
+          <button class="primary" id="csv-dl">Download CSV</button>
+          <input type="file" id="csv-file" accept=".csv" style="max-width:320px">
+          <button id="csv-up">Upload CSV</button></div>
+        <div id="csv-out"></div></div>
       <div class="panel"><h2>View data</h2>
         <div class="actions" style="justify-content:flex-start;flex-wrap:wrap;gap:8px">
           <button id="v-pilot" class="primary">Pilot</button><button id="v-main">Main</button>
-          <select id="v-src" style="max-width:280px"><option value="">All sources</option></select>
           <label class="check" style="margin:0"><input type="checkbox" id="v-all"> Show all columns</label></div>
-        <div id="v-sum"></div><div id="v-table"></div></div>`;
-    const q = () => `include_imported=${view.querySelector("#dl-imp").checked ? 1 : 0}&include_sim=${view.querySelector("#dl-sim").checked ? 1 : 0}`;
-    const setLinks = () => {
-      view.querySelector("#dl-xlsx").href = `/api/admin/export.xlsx?${q()}`;
-      view.querySelector("#dl-pcsv").href = `/api/admin/export/pilot.csv?${q()}`;
-      view.querySelector("#dl-mcsv").href = `/api/admin/export/main.csv?${q()}`;
-    };
-    setLinks();
+        <div id="v-loaded"></div><div id="v-sum"></div><div id="v-table"></div></div>`;
+    const simQ = () => `include_sim=${view.querySelector("#dl-sim").checked ? 1 : 0}`;
     let study = "pilot", sheet = null;
-    const KEY = ["source", "site", "participant", "status", "round", "condition_name", "phone_set", "decision_time_s", "correct", "rank", "switched", "popups_shown", "unsure_yes", "confidence"];
+    const KEY = ["site", "participant", "status", "round", "condition_name", "phone_set", "decision_time_s", "correct", "rank", "switched", "popups_shown", "unsure_yes", "confidence"];
     const cell = v => v === true ? "✓" : v === false ? "✗" : v == null ? "" : esc(v);
     const med = a => {
       const s = a.filter(x => x != null).sort((x, y) => x - y);
@@ -167,12 +187,14 @@ const TABS = {
       return s.length % 2 ? s[(s.length - 1) / 2] : (s[s.length / 2 - 1] + s[s.length / 2]) / 2;
     };
     const render = () => {
-      const src = view.querySelector("#v-src").value;
-      const rows = sheet.rows.filter(r => !src || r.source === src);
+      const rows = sheet.rows;
       const cols = view.querySelector("#v-all").checked ? sheet.columns : KEY;
       const people = new Set(rows.map(r => `${r.site}|${r.participant}`)).size;
       const byC = {};
       rows.forEach(r => { const c = r.condition_name || r.condition; (byC[c] = byC[c] || []).push(r); });
+      const ld = sheet.loaded;
+      view.querySelector("#v-loaded").innerHTML = ld
+        ? `<p class="small muted">Data from <b>${esc(ld.filename)}</b> (laptop ${esc(ld.from_site || "?")}, downloaded ${esc((ld.exported_at || "").replace("T", " "))}), loaded ${esc((ld.loaded_at || "").replace("T", " "))}.</p>` : "";
       view.querySelector("#v-sum").innerHTML = `<p><b>${rows.length}</b> rows from <b>${people}</b> participants.</p>` + (rows.length ? table([
         ["Condition", c => esc(c)], ["Rounds", c => byC[c].length],
         ["% correct (first choice)", c => { const v = byC[c].filter(r => r.correct != null); return v.length ? `${Math.round(100 * v.filter(r => r.correct).length / v.length)}%` : "–"; }],
@@ -184,59 +206,41 @@ const TABS = {
            ${rows.map(r => `<tr>${cols.map(c => `<td>${cell(r[c])}</td>`).join("")}</tr>`).join("")}</table></div>`
         : '<p class="muted">No rows yet.</p>';
     };
-    const listImports = imps => {
-      view.querySelector("#up-list").innerHTML = imps.length ? "<h3 style='margin-top:16px'>Current uploaded sheet</h3>" + table([
-        ["File", b => esc(b.filename)], ["Uploaded", b => esc(String(b.uploaded_at).slice(0, 16))], ["Rows", b => b.rows_added]], imps)
-        + `<div class="actions" style="justify-content:flex-start"><button class="danger" id="clearimp">Clear uploaded sheet (go back to live data only)</button></div>` : "";
-      const cb = view.querySelector("#clearimp");
-      if (cb) cb.onclick = async () => {
-        if (!confirm("Remove the uploaded sheet? The dashboard will show only the data recorded on this laptop. (A backup is made first.)")) return;
-        await API.del("/api/admin/imports");
-        view.querySelector("#up-out").innerHTML = "";
-        load();
-      };
-    };
     const load = async () => {
-      sheet = await API.get(`/api/admin/sheet?study=${study}&${q()}`);
-      const sel = view.querySelector("#v-src"), keep = sel.value;
-      const srcs = [...new Set(sheet.rows.map(r => r.source))];
-      sel.innerHTML = `<option value="">All sources</option>` + srcs.map(x => `<option ${x === keep ? "selected" : ""}>${esc(x)}</option>`).join("");
+      sheet = await API.get(`/api/admin/sheet?study=${study}&${simQ()}`);
       view.querySelector("#v-pilot").classList.toggle("primary", study === "pilot");
       view.querySelector("#v-main").classList.toggle("primary", study === "main");
-      listImports(sheet.imports);
       render();
     };
-    view.querySelector("#dl-imp").onchange = () => { setLinks(); load(); };
-    view.querySelector("#dl-sim").onchange = () => { setLinks(); load(); };
+    view.querySelector("#dl-sim").onchange = load;
     view.querySelector("#v-pilot").onclick = () => { study = "pilot"; load(); };
     view.querySelector("#v-main").onclick = () => { study = "main"; load(); };
-    view.querySelector("#v-src").onchange = render;
     view.querySelector("#v-all").onchange = render;
-    view.querySelector("#up-go").onclick = async () => {
-      const f = view.querySelector("#up-file").files[0];
-      const out = view.querySelector("#up-out");
-      if (!f) { out.innerHTML = '<p class="notice">Choose a file first.</p>'; return; }
-      if (!confirm(`Upload "${f.name}"? It replaces the current sheet (a backup is made first).`)) return;
-      out.innerHTML = '<p class="muted">Uploading…</p>';
+    view.querySelector("#dl-xlsx").onclick = e => downloadFile(`/api/admin/export.xlsx?${simQ()}`, "beyond_clicks_results.xlsx", e.target, view.querySelector("#dl-out"));
+    view.querySelector("#csv-dl").onclick = e => downloadFile("/api/admin/data.csv", "beyond_clicks_study_data.csv", e.target, view.querySelector("#csv-out"));
+    view.querySelector("#csv-up").onclick = async e => {
+      const f = view.querySelector("#csv-file").files[0];
+      const out = view.querySelector("#csv-out");
+      if (!f) { out.innerHTML = '<p class="notice">Choose the CSV file first.</p>'; return; }
+      if (!confirm(`Load the study data from "${f.name}"? The dashboard will then show the data from this file.`)) return;
+      const btn = e.target; btn.disabled = true;
+      out.innerHTML = '<p class="muted">Loading… (large files can take a minute)</p>';
       try {
-        const r = await fetch(`/api/admin/import?filename=${encodeURIComponent(f.name)}`, { method: "POST", body: f, credentials: "same-origin" });
-        const d = await r.json();
-        if (!r.ok) throw new Error(d.detail || "Upload failed");
-        const per = Object.entries(d.per_study).map(([k, v]) => `${k}: ${v}`).join(", ") || "none";
-        out.innerHTML = `<div class="notice good"><b>${d.added}</b> rows loaded (${per}). The uploaded sheet is now the current sheet.
-          ${d.replaced_previous ? `Replaced ${d.replaced_previous} rows from the previous upload.` : ""}
-          ${d.overrides_live ? `${d.overrides_live} rows replace this laptop's live rows for the same participant and round.` : ""}
-          ${d.duplicates_in_file ? `${d.duplicates_in_file} repeated rows in the file (the last one was kept).` : ""}
-          ${d.skipped_empty ? `${d.skipped_empty} empty rows skipped.` : ""}
-          ${d.missing_columns.length ? `<br>Columns missing in the file (left blank): ${esc(d.missing_columns.join(", "))}` : ""}
-          ${d.ignored_columns.length ? `<br>Unknown columns ignored: ${esc(d.ignored_columns.join(", "))}` : ""}</div>`;
-        view.querySelector("#up-file").value = "";
+        const r = await fetch(`/api/admin/data.csv?filename=${encodeURIComponent(f.name)}`, { method: "POST", body: f, credentials: "same-origin" });
+        const ct = r.headers.get("content-type") || "";
+        const d = ct.includes("json") ? await r.json() : { detail: await r.text() };
+        if (!r.ok) throw new Error(d.detail || `Upload failed (${r.status})`);
+        const c = d.counts || {};
+        out.innerHTML = `<div class="notice good">Loaded <b>${esc(d.filename)}</b> from laptop <b>${esc(d.from_site || "?")}</b>:
+          ${c.participants || 0} participants, ${c.tasks || 0} rounds and tasks, ${c.event_batches || 0} blocks of mouse data, ${c.responses || 0} answers.
+          All dashboard pages now use this data.</div>`;
+        view.querySelector("#csv-file").value = "";
         load();
-      } catch (e) { out.innerHTML = `<div class="notice bad">${esc(e.message)}</div>`; }
+      } catch (err) { out.innerHTML = `<div class="notice bad">${esc(err.message)}</div>`; }
+      btn.disabled = false;
     };
     load();
   },
-
 
   async settings() {
     clearCharts();
@@ -280,11 +284,11 @@ const TABS = {
         <p>All data lives in one file, <code>hti_study.db</code>. A complete copy is saved automatically in the <code>backups</code> folder next to it:
         when the site starts, every 15 minutes while data changes, after every participant finishes, at freeze, and before any delete or upload. The newest 40 are kept.</p>
         <div class="actions" style="justify-content:flex-start"><button id="bknow">Make a backup now</button>
-          <a class="btn primary" href="/api/admin/backup.db">Download full backup (.db)</a></div>
-        <p class="small muted" id="bkfolder"></p><div id="bklist"></div></div>
+          <button class="primary" id="bkdl">Download full backup (.db)</button></div>
+        <div id="bkout"></div><p class="small muted" id="bkfolder"></p><div id="bklist"></div></div>
       <div class="panel"><h2>Download all raw data</h2>
         <p>A ZIP with CSV files: participants, tasks, responses, pop-ups, AI requests, replay labels, raw cursor events per task, detector ticks per task, settings and the audit log. Column meanings: docs/DATA_DICTIONARY.md.</p>
-        <a class="btn primary" href="/api/admin/export.zip">Download ZIP</a></div>
+        <button class="primary" id="zipdl">Download ZIP</button><div id="zipout"></div></div>
       <div class="panel"><h2>Check the AI providers</h2>
         <p>Sends a tiny test request to Gemini and Groq.</p>
         <button id="llm">Run check</button><pre class="json" id="llmout" style="margin-top:12px">–</pre></div>
@@ -299,6 +303,8 @@ const TABS = {
         : '<p class="muted">No backups yet.</p>';
     };
     loadBk();
+    view.querySelector("#bkdl").onclick = e => downloadFile("/api/admin/backup.db", "hti_study_full_backup.db", e.target, view.querySelector("#bkout"));
+    view.querySelector("#zipdl").onclick = e => downloadFile("/api/admin/export.zip", "hti_study_export.zip", e.target, view.querySelector("#zipout"));
     view.querySelector("#bknow").onclick = async () => { try { await API.post("/api/admin/backups"); loadBk(); } catch (e) { alert(e.message); } };
     view.querySelector("#llm").onclick = async () => {
       view.querySelector("#llmout").textContent = "Checking…";
@@ -452,38 +458,5 @@ function renderMain(r, out) {
     { label: "Smart pop-up (C3)", data: ser(al.C3), borderColor: "#3557d6" }, { label: "Random pop-up (C4)", data: ser(al.C4), borderColor: "#999" }] },
     options: { scales: { x: { title: { display: true, text: "Seconds from pop-up" } }, y: { beginAtZero: true, title: { display: true, text: "Hesitation score" } } } } });
 }
-
-// Every dashboard download (Excel, CSV, ZIP, backup) is fetched and saved explicitly, so it works the same in every
-// browser and shows a message instead of silently doing nothing (e.g. when the login has expired).
-async function downloadFile(url, btn) {
-  const label = btn ? btn.textContent : "";
-  if (btn) { btn.textContent = "Preparing download…"; btn.classList.add("busy"); }
-  try {
-    const r = await fetch(url, { credentials: "same-origin" });
-    if (r.status === 401) throw new Error("Your login has expired. Reload the page and log in again.");
-    if (!r.ok) throw new Error(`Download failed (error ${r.status}).`);
-    const disp = r.headers.get("content-disposition") || "";
-    const m = disp.match(/filename="?([^";]+)"?/);
-    const name = m ? m[1] : url.split("/").pop().split("?")[0];
-    const blob = await r.blob();
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = name;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(() => URL.revokeObjectURL(a.href), 60000);
-  } catch (e) {
-    alert(e.message + "\n\nIf downloads never start, open this dashboard in Chrome or Edge (http://localhost:8000/admin).");
-  } finally {
-    if (btn) { btn.textContent = label; btn.classList.remove("busy"); }
-  }
-}
-document.addEventListener("click", e => {
-  const a = e.target.closest('a[href^="/api/admin/"]');
-  if (!a) return;
-  e.preventDefault();
-  downloadFile(a.getAttribute("href"), a);
-});
 
 boot();

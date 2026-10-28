@@ -167,28 +167,6 @@ audit = Table(
 )
 
 
-import_batches = Table(
-    "import_batches", md,
-    Column("id", Integer, primary_key=True),
-    Column("filename", String(255)),
-    Column("uploaded_at", DateTime(timezone=True)),
-    Column("rows_added", Integer),
-    Column("rows_skipped", Integer),
-)
-
-imported_rows = Table(                     # rows from an uploaded Excel/CSV (same columns as the download)
-    "imported_rows", md,
-    Column("id", Integer, primary_key=True),
-    Column("batch_id", Integer, ForeignKey("import_batches.id", ondelete="CASCADE"), index=True),
-    Column("study", String(8)),            # pilot | main
-    Column("site", String(64)),            # which laptop collected it
-    Column("participant", String(32)),
-    Column("task_key", String(16)),
-    Column("data", Text),                  # JSON {column: value}
-    UniqueConstraint("study", "site", "participant", "task_key", name="uq_imported_row"),
-)
-
-
 def now():
     return datetime.now(timezone.utc)
 

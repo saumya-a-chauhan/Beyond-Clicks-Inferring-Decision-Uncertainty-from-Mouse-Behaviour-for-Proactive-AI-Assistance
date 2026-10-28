@@ -55,10 +55,10 @@ explained: [docs/DETECTOR.md](docs/DETECTOR.md) and [docs/VALUES.md](docs/VALUES
 - Researcher dashboard: participants, pilot threshold sweep with charts, leave-one-out, freeze/unfreeze (audited),
   main results (yes-rates, AUC at random moments, speed, quality, questionnaires), ZIP export.
 - **Data & Excel tab:** download an Excel file with a **Pilot** and a **Main** sheet (one row per participant and round,
-  always up to date) or single CSVs; **upload** an Excel/CSV with the same columns to overwrite the current sheet
-  (rounds recorded after the upload are still added below it automatically).
+  always up to date); **Download CSV** saves the complete study data in one file, and **Upload CSV** loads such a file
+  so every page, the pilot analysis, the freeze, the results and the figures run on that data.
 - **Data safety:** every save goes straight into `hti_study.db`; automatic backups in `backups/` (at start, every 15
-  minutes while data changes, after each participant, at freeze, before deletes and uploads); full backup download.
+  minutes while data changes, after each participant, at freeze, before deletes and CSV loads); full backup download.
 - **Experimenter guide** inside the site at `/guide`: setup, pilot, freeze, main study, data, troubleshooting.
 - Offline analysis script with 22 figures and mixed-effects models; simulator for testing; unit tests.
 
@@ -94,10 +94,10 @@ download a ZIP from the dashboard (**Backups & tools**) for analysis.
 - Automatic complete copies go to the **`backups/`** folder (newest 40 kept). Restoring one is described in the guide.
 - **Zipping the folder:** the data travels only if `hti_study.db` is inside the ZIP. Never include `.venv` (about
   500 MB, works only on the PC that made it; the start script recreates it).
-- **Sharing results:** dashboard → **Data & Excel** → Download Excel. Uploading an Excel there overwrites the current
-  sheet (new rounds are still added). Another laptop can upload that file to see and
-  combine the rows. The pilot analysis and freeze always use the raw data on the laptop itself, so run the **whole study
-  on one laptop**.
+- **Moving the data to another laptop:** on the experiment laptop, dashboard → **Data & Excel** → **Download CSV**.
+  On the analysis laptop, **Upload CSV**: that laptop then shows exactly the same participants, pilot analysis, freeze,
+  results and Excel, and `analysis/make_figures.py` runs on it. A backup is made before loading. Run the **whole study
+  on one laptop** and never upload a CSV on the experiment laptop itself.
 
 To make a clean code-only ZIP without data or secrets: `git archive -o Beyond-Clicks-code.zip HEAD` (teammates then
 copy `.env.example` to `.env` and fill it in).
@@ -136,7 +136,8 @@ app/
   plans.py        the screens each participant goes through
   phones.py       phone sets and scoring of choices
   db.py           database tables (SQLite locally, Postgres in the cloud)
-  sheets.py       results sheets: Excel/CSV download and upload
+  sheets.py       results sheet (Excel download)
+  datacsv.py      study data as one CSV: download and load
   backup.py       automatic and manual database backups
   data/phone_sets.json   the 6 phone sets (practice, 4 main, 1 pilot-AI)
 static/           website (home, participant runner, researcher dashboard, guide.html)

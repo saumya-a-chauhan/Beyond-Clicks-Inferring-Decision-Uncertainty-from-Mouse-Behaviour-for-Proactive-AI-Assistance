@@ -43,7 +43,7 @@
     <a href="#freeze">5. When and how to freeze</a>
     <a href="#main">6. Running a main session</a>
     <a href="#after">7. After every session day</a>
-    <a href="#excel">8. Excel download and upload</a>
+    <a href="#excel">8. Excel and CSV (sharing the data)</a>
     <a href="#safe">9. Is the data safe?</a>
     <a href="#rules">10. Golden rules</a>
     <a href="#trouble">11. Troubleshooting</a>
@@ -138,18 +138,24 @@
 
   <h2 id="after">7. After every session day</h2>
   <ol>
-    <li>Dashboard → <b>Data &amp; Excel → Download Excel (Pilot + Main)</b>. Save it in the team's shared folder with the date in the name.</li>
+    <li>Dashboard → <b>Data &amp; Excel → Download Excel (Pilot + Main)</b>. Save it in the team's shared folder.</li>
+    <li>Dashboard → <b>Data &amp; Excel → Download CSV</b>, and send that CSV file to Saumya (WhatsApp, Drive or email). It contains everything, so the full analysis can be run on another laptop.</li>
     <li>Dashboard → <b>Backups &amp; tools → Download full backup (.db)</b> and put it somewhere safe (a USB drive or the team drive). This file has <i>everything</i>, including the raw mouse data.</li>
     <li>Close the black window to stop the website when you are done for the day.</li>
   </ol>
 
-  <h2 id="excel">8. Excel download and upload</h2>
+  <h2 id="excel">8. Excel and CSV (sharing the data)</h2>
+  <p>Everything is on the <b>Data &amp; Excel</b> tab. Downloads go to your Downloads folder, and a short "Saved …" message confirms each one.</p>
+  <table class="data">
+    <tr><th>Button</th><th>What it does</th><th>Who uses it</th></tr>
+    <tr><td><b>Download Excel (Pilot + Main)</b></td><td>Results to read: a Pilot sheet and a Main sheet (one row per participant and round) and an About sheet explaining each column. Always up to date.</td><td>Everyone, to look at results.</td></tr>
+    <tr><td><b>Download CSV</b></td><td>The complete study data in one file: participants, rounds, mouse movement, answers, pop-ups, replay labels and settings (including the freeze).</td><td>The experiment laptop, to send the data to Saumya.</td></tr>
+    <tr><td><b>Upload CSV</b></td><td>Loads such a CSV. After that every dashboard page (participants, pilot analysis, freeze, results, Excel) and the analysis script use the data from the file. A backup is saved first.</td><td>Saumya's laptop, for the analysis.</td></tr>
+  </table>
   <ul>
-    <li><b>Download:</b> <i>Data &amp; Excel</i> tab. The Excel file has a <b>Pilot</b> sheet and a <b>Main</b> sheet (one row per participant and round) and an <b>About</b> sheet explaining each column. It is rebuilt from the data every time, so every new participant is added automatically. Single CSV files for Pilot or Main are there too.</li>
-    <li><b>Upload (overwrites):</b> upload an Excel file with the same columns (for example a downloaded sheet you cleaned or corrected, or one from another laptop). It <b>replaces the current sheet</b>: everything recorded up to that moment is shown exactly as it is in the file (edited values kept, deleted rows hidden), and it replaces any earlier upload. A backup is made first.</li>
-    <li><b>New participants are still added:</b> every round recorded on the laptop <i>after</i> the upload appears below the uploaded rows automatically, in the table and in every download.</li>
-    <li><b>Clear uploaded sheet</b> (in the same tab) goes back to the live data recorded on the laptop. Unticking "Use the uploaded sheet" shows the live data without removing the upload.</li>
-    <li>The upload changes what the table and the downloads show. It never changes the recorded raw data: the pilot analysis, the freeze and the main-study charts always use the data recorded on the laptop, because they need the mouse movement.</li>
+    <li><b>On the experiment laptop, only ever press Download CSV, never Upload CSV.</b> That laptop's own recordings are the real study data.</li>
+    <li>Send the CSV exactly as it was downloaded. Do not open it in Excel and save it again (Excel can damage it). To look at results, use the Excel download instead.</li>
+    <li>The CSV can be sent again at any time (for example after every session day); the newest one always contains everything.</li>
   </ul>
 
   <h2 id="safe">9. Is the data safe?</h2>
@@ -159,6 +165,7 @@
     <tr><td>Browser closes during a session</td><td><b>Kept.</b> Reopen the start page and click <b>Continue</b>.</td></tr>
     <tr><td>Laptop crashes or a file gets damaged</td><td>A complete copy is saved automatically in the <code>backups</code> folder: when the site starts, every 15 minutes while data changes, after every participant, at freeze, and before any delete or upload (newest 40 kept). See "Restore a backup" below.</td></tr>
     <tr><td>You zip the project folder and send it to someone</td><td>The data goes with it <b>only if</b> <code>hti_study.db</code> (and the <code>backups</code> folder) are inside the ZIP. <b>Stop the website first</b> (close the black window), then zip. The person who unzips it and starts it will see all the data in their dashboard.</td></tr>
+    <tr><td>You send the CSV from <b>Download CSV</b></td><td>The person who uploads it sees exactly the same participants, results and analysis as you.</td></tr>
     <tr><td>You send the code-only ZIP Saumya made</td><td>No data inside: it starts empty. Use this for teammates who only need to look or test.</td></tr>
     <tr><td>Someone deletes a participant by mistake</td><td>A backup was made just before the delete; restore it.</td></tr>
   </table>
@@ -177,6 +184,7 @@
     <li><b>Never freeze</b> with simulated (test) data, and never run the test simulator on the real study folder.</li>
     <li><b>Always the external mouse</b>, zoom 100%, full screen.</li>
     <li><b>Do not tell</b> participants about the random pop-ups before the debrief.</li>
+    <li>On the experiment laptop: <b>Download CSV</b> yes, <b>Upload CSV</b> never.</li>
     <li>Do not share the <code>.env</code> file publicly: it holds the password and the AI keys.</li>
     <li>Exclude a participant (Participants → Exclude, with a reason) only for: touchpad used, did not finish the 4 rounds, a technical failure, or clearly not trying (chose within 5 seconds every round).</li>
   </ol>

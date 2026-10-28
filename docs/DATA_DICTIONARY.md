@@ -4,14 +4,19 @@
 
 The Excel download has a **Pilot** and a **Main** sheet with the same columns, one row per participant and shopping
 round, and an **About** sheet that explains every column (the list lives in `app/sheets.py`). Key columns:
-`source` (this laptop or the uploaded file), `site` (laptop name), `participant`, `round`, `condition`,
-`decision_time_s`, `correct`, `rank`, `switched`, pop-up counts, confidence, NASA-TLX, SAM, help ratings, trust, SUS,
-preference rank. A CSV upload needs the same column names plus a `study` column (`pilot` or `main`).
+`site` (laptop that recorded the data), `participant`, `round`, `condition`, `decision_time_s`, `correct`, `rank`,
+`switched`, pop-up counts, confidence, NASA-TLX, SAM, help ratings, trust, SUS, preference rank.
 
-**Uploading overwrites:** an uploaded file replaces the previous upload for the studies it contains and becomes the
-current sheet. Rows are shown as they are in the file; this laptop's rounds that started **after** the upload are added
-below it. Rows are identified by `site` + `participant` + `task_key` (if a file repeats one, the last row wins).
-"Clear uploaded sheet" returns to the live data. Uploads never change the raw data used by the analysis.
+## Study-data CSV (dashboard → Data & Excel → Download CSV / Upload CSV)
+
+The complete database in one file (`app/datacsv.py`): columns `table`, `key`, `part`, `parts`, `data`. Each line is one
+database row (participants, tasks, event_batches, popups, ai_requests, labels, responses, settings, audit) as JSON;
+dates are `{"$dt": iso}`, binary data (gzipped mouse events, detector ticks) is `{"$b64": base64}`. Rows longer than
+30,000 characters are split over several lines (`part` of `parts`). The `_meta` line holds the format version, the
+source laptop and the number of rows per table; a file whose counts do not match (cut off or edited) is refused before
+anything changes. Session tokens are never exported; the laptop name (`site_name` setting) stays with each laptop.
+Loading a file makes the database hold exactly the file's data (a backup is made first), so every page and analysis
+uses it.
 
 ## Raw data ZIP
 

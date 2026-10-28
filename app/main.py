@@ -6,6 +6,7 @@ import random
 import secrets
 import tempfile
 import zipfile
+from datetime import datetime
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -15,7 +16,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from sqlalchemy import func, select
 
-from . import analysis, auth, backup, config, db, live, llm, phones, sheets
+from . import analysis, auth, backup, config, datacsv, db, live, llm, phones, sheets
 from .assign import next_assignment
 from .defaults import CONDITIONS, DETECTOR_DEFAULTS, STUDY_INFO_DEFAULTS
 from .detector import compute_ticks, popup_content
@@ -798,60 +799,46 @@ def admin_export():
                              headers={"Content-Disposition": "attachment; filename=hti_study_export.zip"})
 
 
-# ---------------------------------------------------------------- results sheets (Excel / CSV) and backups
+# ---------------------------------------------------------------- results sheet (Excel), study-data CSV, backups
 def _flag(v):
     return str(v).lower() in ("1", "true", "yes", "on")
 
 
 @app.get("/api/admin/sheet", dependencies=[Depends(auth.require_admin)])
-def admin_sheet(study: str = "pilot", include_imported: str = "1", include_sim: str = "0"):
+def admin_sheet(study: str = "pilot", include_sim: str = "0"):
     if study not in sheets.STUDIES:
         raise HTTPException(400, "Unknown study")
-    rows = [{k: v for k, v in r.items() if not k.startswith("_")}
-            for r in sheets.all_rows(study, _flag(include_imported), _flag(include_sim))]
-    return {"columns": sheets.display_columns(), "rows": rows, "site": sheets.site_name(),
-            "meanings": dict(sheets.COLUMNS), "imports": [dict(b, uploaded_at=str(b["uploaded_at"])) for b in sheets.batches()]}
+    return {"columns": sheets.display_columns(), "rows": sheets.local_rows(study, _flag(include_sim)),
+            "meanings": dict(sheets.COLUMNS), "loaded": db.get_setting("loaded_data")}
 
 
 @app.get("/api/admin/export.xlsx", dependencies=[Depends(auth.require_admin)])
-def admin_export_xlsx(include_imported: str = "1", include_sim: str = "0"):
-    data = sheets.to_xlsx(_flag(include_imported), _flag(include_sim))
-    name = f"beyond_clicks_results_{db.now():%Y%m%d_%H%M}.xlsx"
+def admin_export_xlsx(include_sim: str = "0"):
+    data = sheets.to_xlsx(_flag(include_sim))
+    name = f"beyond_clicks_results_{datetime.now():%Y%m%d_%H%M}.xlsx"
     return Response(data, media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                    headers={"Content-Disposition": f"attachment; filename={name}"})
+                    headers={"Content-Disposition": f'attachment; filename="{name}"'})
 
 
-@app.get("/api/admin/export/{study}.csv", dependencies=[Depends(auth.require_admin)])
-def admin_export_csv(study: str, include_imported: str = "1", include_sim: str = "0"):
-    if study not in sheets.STUDIES:
-        raise HTTPException(404, "Unknown study")
-    data = sheets.to_csv(study, _flag(include_imported), _flag(include_sim))
+@app.get("/api/admin/data.csv", dependencies=[Depends(auth.require_admin)])
+def admin_data_csv():
+    data = datacsv.export_csv(sheets.site_name())
+    name = f"beyond_clicks_study_data_{sheets.site_name()}_{datetime.now():%Y%m%d_%H%M}.csv".replace(" ", "_")
     return Response(data, media_type="text/csv; charset=utf-8",
-                    headers={"Content-Disposition": f"attachment; filename=beyond_clicks_{study}_{db.now():%Y%m%d_%H%M}.csv"})
+                    headers={"Content-Disposition": f'attachment; filename="{name}"'})
 
 
-@app.post("/api/admin/import", dependencies=[Depends(auth.require_admin)])
-async def admin_import(request: Request, filename: str = "upload.xlsx"):
+@app.post("/api/admin/data.csv", dependencies=[Depends(auth.require_admin)])
+async def admin_load_data_csv(request: Request, filename: str = "study_data.csv"):
     content = await request.body()
     if not content:
         raise HTTPException(400, "The file is empty.")
-    backup.make_backup("before_import")
     try:
-        return sheets.import_file(Path(filename).name, content)
-    except ValueError as e:
-        raise HTTPException(400, str(e)) from e
-
-
-@app.delete("/api/admin/imports", dependencies=[Depends(auth.require_admin)])
-def admin_clear_imports():
-    backup.make_backup("before_clear")
-    return {"ok": True, "deleted_rows": sheets.clear_imports()}
-
-
-@app.delete("/api/admin/imports/{bid}", dependencies=[Depends(auth.require_admin)])
-def admin_delete_import(bid: int):
-    backup.make_backup("before_delete")
-    return {"ok": True, "deleted": sheets.delete_batch(bid)}
+        datacsv._parse(content)                 # check the whole file before touching anything
+    except (ValueError, UnicodeDecodeError) as e:
+        raise HTTPException(400, str(e) if isinstance(e, ValueError) else "The file is not a UTF-8 CSV.") from e
+    backup.make_backup("before_csv_load")
+    return datacsv.load_csv(content, Path(filename).name)
 
 
 @app.get("/api/admin/backups", dependencies=[Depends(auth.require_admin)])
@@ -877,6 +864,6 @@ def admin_backup_download():
     data = tmp.read_bytes()
     tmp.unlink(missing_ok=True)
     tmp_dir.rmdir()
-    name = f"hti_study_full_backup_{db.now():%Y%m%d_%H%M}.db"
+    name = f"hti_study_full_backup_{datetime.now():%Y%m%d_%H%M}.db"
     return Response(data, media_type="application/octet-stream",
                     headers={"Content-Disposition": f"attachment; filename={name}"})
