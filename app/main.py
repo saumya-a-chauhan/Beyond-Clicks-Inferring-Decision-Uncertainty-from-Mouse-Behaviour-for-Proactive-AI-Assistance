@@ -807,7 +807,8 @@ def _flag(v):
 def admin_sheet(study: str = "pilot", include_imported: str = "1", include_sim: str = "0"):
     if study not in sheets.STUDIES:
         raise HTTPException(400, "Unknown study")
-    rows = sheets.all_rows(study, _flag(include_imported), _flag(include_sim))
+    rows = [{k: v for k, v in r.items() if not k.startswith("_")}
+            for r in sheets.all_rows(study, _flag(include_imported), _flag(include_sim))]
     return {"columns": sheets.display_columns(), "rows": rows, "site": sheets.site_name(),
             "meanings": dict(sheets.COLUMNS), "imports": [dict(b, uploaded_at=str(b["uploaded_at"])) for b in sheets.batches()]}
 
@@ -839,6 +840,12 @@ async def admin_import(request: Request, filename: str = "upload.xlsx"):
         return sheets.import_file(Path(filename).name, content)
     except ValueError as e:
         raise HTTPException(400, str(e)) from e
+
+
+@app.delete("/api/admin/imports", dependencies=[Depends(auth.require_admin)])
+def admin_clear_imports():
+    backup.make_backup("before_clear")
+    return {"ok": True, "deleted_rows": sheets.clear_imports()}
 
 
 @app.delete("/api/admin/imports/{bid}", dependencies=[Depends(auth.require_admin)])

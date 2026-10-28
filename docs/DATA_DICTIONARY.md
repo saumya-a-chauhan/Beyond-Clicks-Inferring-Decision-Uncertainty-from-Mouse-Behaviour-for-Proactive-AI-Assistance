@@ -6,8 +6,12 @@ The Excel download has a **Pilot** and a **Main** sheet with the same columns, o
 round, and an **About** sheet that explains every column (the list lives in `app/sheets.py`). Key columns:
 `source` (this laptop or the uploaded file), `site` (laptop name), `participant`, `round`, `condition`,
 `decision_time_s`, `correct`, `rank`, `switched`, pop-up counts, confidence, NASA-TLX, SAM, help ratings, trust, SUS,
-preference rank. A CSV upload needs the same column names plus a `study` column (`pilot` or `main`); rows are matched
-on `site` + `participant` + `task_key`, so the same row is never added twice.
+preference rank. A CSV upload needs the same column names plus a `study` column (`pilot` or `main`).
+
+**Uploading overwrites:** an uploaded file replaces the previous upload for the studies it contains and becomes the
+current sheet. Rows are shown as they are in the file; this laptop's rounds that started **after** the upload are added
+below it. Rows are identified by `site` + `participant` + `task_key` (if a file repeats one, the last row wins).
+"Clear uploaded sheet" returns to the live data. Uploads never change the raw data used by the analysis.
 
 ## Raw data ZIP
 

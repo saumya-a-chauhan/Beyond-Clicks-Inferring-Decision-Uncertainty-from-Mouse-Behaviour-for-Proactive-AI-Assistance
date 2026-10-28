@@ -1,14 +1,16 @@
 """Results sheets: one row per participant x shopping round, as Excel (Pilot + Main sheets) or CSV.
 
-The same columns are used for download and upload, so a sheet downloaded on one laptop can be uploaded on another
-and is shown (and re-downloaded) together with that laptop's own data.
+The same columns are used for download and upload. Uploading a sheet REPLACES the previously uploaded data for the
+studies in that file and becomes the current sheet: it overwrites everything recorded up to the moment of the upload
+(rows are shown exactly as they are in the file; rows deleted from the file stay hidden). Rounds recorded on this
+laptop AFTER the upload (new participants, or later rounds of someone in progress) are added below it automatically.
 """
 import csv
 import io
 import json
 import socket
 import statistics as st
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 
 from openpyxl import Workbook, load_workbook
 from openpyxl.styles import Font, PatternFill
@@ -152,8 +154,27 @@ def local_rows(study, include_sim=False):
                 for k in TLX_KEYS:
                     row[f"tlx_{k}"] = _num(post.get(k))
                 row[EXTRA_DISPLAY] = "this laptop"
+                row["_started"] = _utc_naive(t["started_at"])      # internal: decides "recorded after the upload"
                 out.append(row)
     return out
+
+
+def _utc_naive(dt):
+    if dt is None:
+        return None
+    if dt.tzinfo is not None:
+        dt = dt.astimezone(timezone.utc).replace(tzinfo=None)
+    return dt
+
+
+def upload_time(study):
+    """When the current uploaded sheet for this study was uploaded (None if there is none)."""
+    with db.engine.connect() as conn:
+        t = conn.execute(select(db.import_batches.c.uploaded_at)
+                         .join(db.imported_rows, db.imported_rows.c.batch_id == db.import_batches.c.id)
+                         .where(db.imported_rows.c.study == study)
+                         .order_by(db.import_batches.c.uploaded_at.desc()).limit(1)).scalar()
+    return _utc_naive(t)
 
 
 def imported(study):
@@ -169,11 +190,20 @@ def imported(study):
     return out
 
 
+def row_key(r):
+    return (str(r.get("site")), str(r.get("participant")), str(r.get("task_key")))
+
+
 def all_rows(study, include_imported=True, include_sim=False):
-    rows = local_rows(study, include_sim)
-    if include_imported:
-        rows += [r for r in imported(study) if include_sim or not r.get("simulated")]
-    return rows
+    """The current sheet: the uploaded file's rows (if any), then this laptop's rounds recorded after the upload."""
+    local = local_rows(study, include_sim)
+    when = upload_time(study) if include_imported else None
+    if when is None:
+        return local
+    up = [r for r in imported(study) if include_sim or not r.get("simulated")]
+    in_upload = {row_key(r) for r in up}
+    later = [r for r in local if row_key(r) not in in_upload and r.get("_started") and r["_started"] > when]
+    return up + later
 
 
 def display_columns():
@@ -200,7 +230,7 @@ def to_xlsx(include_imported=True, include_sim=False) -> bytes:
     about = wb.create_sheet("About")
     about.append(["Beyond Clicks study results", f"downloaded {datetime.now():%Y-%m-%d %H:%M} from laptop '{site_name()}'"])
     about.append(["One row per participant and shopping round. Sheets 'Pilot' and 'Main' have the same columns."])
-    about.append(["To combine laptops: upload this file in another laptop's dashboard (Data & Excel tab)."])
+    about.append(["Uploading this file in the dashboard (Data & Excel tab) makes it the current sheet; new participants are added below it."])
     about.append([])
     about.append(["Column", "Meaning"])
     about.append([EXTRA_DISPLAY, "Where the row came from: this laptop, or the file it was uploaded from"])
@@ -277,13 +307,14 @@ def _tables_from_upload(filename, content):
 
 
 def import_file(filename, content):
+    """Replace the uploaded data for every study (sheet) in this file with the file's rows."""
     if len(content) > MAX_UPLOAD_BYTES:
         raise ValueError("File is larger than 15 MB.")
     tables = _tables_from_upload(filename, content)
-    own_site = site_name()
-    report = {"filename": filename, "added": 0, "skipped_duplicates": 0, "skipped_own_laptop": 0,
-              "skipped_empty": 0, "missing_columns": [], "ignored_columns": [], "per_study": {}}
-    pending = []
+    report = {"filename": filename, "added": 0, "duplicates_in_file": 0, "skipped_empty": 0,
+              "replaced_previous": 0, "overrides_live": 0, "missing_columns": [], "ignored_columns": [],
+              "per_study": {}, "studies": sorted(tables)}
+    rows_by_study = {}
     for study, (header, rows) in tables.items():
         missing_keys = [k for k in KEY_COLUMNS if k not in header]
         if missing_keys:
@@ -292,6 +323,7 @@ def import_file(filename, content):
         report["ignored_columns"] = sorted(set(report["ignored_columns"]) |
                                            {h for h in header if h and h not in COLUMN_NAMES and h != EXTRA_DISPLAY})
         idx = {h: i for i, h in enumerate(header) if h in COLUMN_NAMES}
+        keep = {}                                  # key -> row; a later row with the same key wins
         for r in rows:
             d = {c: _clean_value(r[i]) if i < len(r) else None for c, i in idx.items()}
             if not d.get("participant") or not d.get("task_key"):
@@ -300,44 +332,53 @@ def import_file(filename, content):
             d["site"] = str(d.get("site") or "unknown")
             d["participant"], d["task_key"] = str(d["participant"]), str(d["task_key"])
             d["study"] = study
-            if d["site"] == own_site:          # this laptop's own rows: already shown from the live database
-                report["skipped_own_laptop"] += 1
-                continue
-            pending.append((study, d))
-    if len(pending) > MAX_UPLOAD_ROWS:
-        raise ValueError(f"Too many rows ({len(pending)}); the limit is {MAX_UPLOAD_ROWS}.")
+            k = row_key(d)
+            if k in keep:
+                report["duplicates_in_file"] += 1
+                del keep[k]                        # re-insert so the order follows the last occurrence
+            keep[k] = d
+        rows_by_study[study] = list(keep.values())
+    total = sum(len(v) for v in rows_by_study.values())
+    if total > MAX_UPLOAD_ROWS:
+        raise ValueError(f"Too many rows ({total}); the limit is {MAX_UPLOAD_ROWS}.")
+    if total == 0:
+        raise ValueError("The file has no data rows (each row needs at least a participant and a task_key).")
+    for study, rows in rows_by_study.items():
+        live = {row_key(r) for r in local_rows(study, include_sim=True)}
+        report["overrides_live"] += sum(1 for r in rows if row_key(r) in live)
     with db.engine.begin() as conn:
+        for study in rows_by_study:                # replace: drop the previous upload for these studies
+            report["replaced_previous"] += conn.execute(
+                db.imported_rows.delete().where(db.imported_rows.c.study == study)).rowcount
+        skipped = report["skipped_empty"] + report["duplicates_in_file"]
         bid = conn.execute(db.import_batches.insert().values(filename=filename[:255], uploaded_at=db.now(),
-                                                             rows_added=0, rows_skipped=0)).inserted_primary_key[0]
-        seen = set()
-        for study, d in pending:
-            key = (study, d["site"], d["participant"], d["task_key"])
-            dup = key in seen or conn.execute(select(db.imported_rows.c.id).where(
-                db.imported_rows.c.study == study, db.imported_rows.c.site == d["site"],
-                db.imported_rows.c.participant == d["participant"],
-                db.imported_rows.c.task_key == d["task_key"])).first()
-            if dup:
-                report["skipped_duplicates"] += 1
-                continue
-            seen.add(key)
-            conn.execute(db.imported_rows.insert().values(batch_id=bid, study=study, site=d["site"],
-                                                          participant=d["participant"], task_key=d["task_key"],
-                                                          data=json.dumps(d, default=str)))
-            report["added"] += 1
-            report["per_study"][study] = report["per_study"].get(study, 0) + 1
-        skipped = report["skipped_duplicates"] + report["skipped_own_laptop"] + report["skipped_empty"]
-        conn.execute(db.import_batches.update().where(db.import_batches.c.id == bid)
-                     .values(rows_added=report["added"], rows_skipped=skipped))
-        if report["added"] == 0:
-            conn.execute(db.import_batches.delete().where(db.import_batches.c.id == bid))
-        db.log_audit("import", {k: report[k] for k in ("filename", "added", "skipped_duplicates", "skipped_own_laptop")},
-                     conn=conn)
+                                                             rows_added=total, rows_skipped=skipped)).inserted_primary_key[0]
+        for study, rows in rows_by_study.items():
+            for d in rows:
+                conn.execute(db.imported_rows.insert().values(batch_id=bid, study=study, site=d["site"],
+                                                              participant=d["participant"], task_key=d["task_key"],
+                                                              data=json.dumps(d, default=str)))
+            report["per_study"][study] = len(rows)
+        report["added"] = total
+        # an older upload left with no rows (all its studies replaced) disappears from the list
+        used = select(db.imported_rows.c.batch_id).distinct()
+        conn.execute(db.import_batches.delete().where(db.import_batches.c.id.not_in(used)))
+        db.log_audit("import", {k: report[k] for k in ("filename", "added", "replaced_previous", "overrides_live",
+                                                        "studies")}, conn=conn)
     return report
 
 
 def batches():
     with db.engine.connect() as conn:
         return [dict(r._mapping) for r in conn.execute(select(db.import_batches).order_by(db.import_batches.c.id.desc()))]
+
+
+def clear_imports():
+    with db.engine.begin() as conn:
+        n = conn.execute(db.imported_rows.delete()).rowcount
+        conn.execute(db.import_batches.delete())
+        db.log_audit("imports_cleared", {"rows": n}, conn=conn)
+    return n
 
 
 def delete_batch(bid):

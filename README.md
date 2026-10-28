@@ -55,7 +55,8 @@ explained: [docs/DETECTOR.md](docs/DETECTOR.md) and [docs/VALUES.md](docs/VALUES
 - Researcher dashboard: participants, pilot threshold sweep with charts, leave-one-out, freeze/unfreeze (audited),
   main results (yes-rates, AUC at random moments, speed, quality, questionnaires), ZIP export.
 - **Data & Excel tab:** download an Excel file with a **Pilot** and a **Main** sheet (one row per participant and round,
-  always up to date) or single CSVs; upload a sheet from another laptop to view and combine it (duplicates skipped).
+  always up to date) or single CSVs; **upload** an Excel/CSV with the same columns to overwrite the current sheet
+  (rounds recorded after the upload are still added below it automatically).
 - **Data safety:** every save goes straight into `hti_study.db`; automatic backups in `backups/` (at start, every 15
   minutes while data changes, after each participant, at freeze, before deletes and uploads); full backup download.
 - **Experimenter guide** inside the site at `/guide`: setup, pilot, freeze, main study, data, troubleshooting.
@@ -93,7 +94,8 @@ download a ZIP from the dashboard (**Backups & tools**) for analysis.
 - Automatic complete copies go to the **`backups/`** folder (newest 40 kept). Restoring one is described in the guide.
 - **Zipping the folder:** the data travels only if `hti_study.db` is inside the ZIP. Never include `.venv` (about
   500 MB, works only on the PC that made it; the start script recreates it).
-- **Sharing results:** dashboard → **Data & Excel** → Download Excel. Another laptop can upload that file to see and
+- **Sharing results:** dashboard → **Data & Excel** → Download Excel. Uploading an Excel there overwrites the current
+  sheet (new rounds are still added). Another laptop can upload that file to see and
   combine the rows. The pilot analysis and freeze always use the raw data on the laptop itself, so run the **whole study
   on one laptop**.
 

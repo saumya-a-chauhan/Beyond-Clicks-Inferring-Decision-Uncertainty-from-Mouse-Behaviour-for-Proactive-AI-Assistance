@@ -146,8 +146,10 @@
   <h2 id="excel">8. Excel download and upload</h2>
   <ul>
     <li><b>Download:</b> <i>Data &amp; Excel</i> tab. The Excel file has a <b>Pilot</b> sheet and a <b>Main</b> sheet (one row per participant and round) and an <b>About</b> sheet explaining each column. It is rebuilt from the data every time, so every new participant is added automatically. Single CSV files for Pilot or Main are there too.</li>
-    <li><b>Upload:</b> on any laptop running the project, upload an Excel file downloaded from another laptop. Its rows appear in the <i>View data</i> table (labelled with the file name) and in your own downloads, so one Excel can collect everything. Uploading the same file twice is safe (duplicates are skipped), and an upload can be removed again.</li>
-    <li>Uploaded rows are for viewing and combining sheets. The pilot analysis, the freeze and the main-study charts always use the data recorded on the laptop itself, because they need the raw mouse movement.</li>
+    <li><b>Upload (overwrites):</b> upload an Excel file with the same columns (for example a downloaded sheet you cleaned or corrected, or one from another laptop). It <b>replaces the current sheet</b>: everything recorded up to that moment is shown exactly as it is in the file (edited values kept, deleted rows hidden), and it replaces any earlier upload. A backup is made first.</li>
+    <li><b>New participants are still added:</b> every round recorded on the laptop <i>after</i> the upload appears below the uploaded rows automatically, in the table and in every download.</li>
+    <li><b>Clear uploaded sheet</b> (in the same tab) goes back to the live data recorded on the laptop. Unticking "Use the uploaded sheet" shows the live data without removing the upload.</li>
+    <li>The upload changes what the table and the downloads show. It never changes the recorded raw data: the pilot analysis, the freeze and the main-study charts always use the data recorded on the laptop, because they need the mouse movement.</li>
   </ul>
 
   <h2 id="safe">9. Is the data safe?</h2>

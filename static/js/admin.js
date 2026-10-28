@@ -130,16 +130,18 @@ const TABS = {
       <div class="panel"><h2>Download results sheet</h2>
         <p>One row per participant and shopping round. The Excel file has a <b>Pilot</b> sheet and a <b>Main</b> sheet with the same columns, plus an <b>About</b> sheet explaining every column.
         It is built fresh from the data each time, so new participants are always included.</p>
-        <label class="check"><input type="checkbox" id="dl-imp" checked> Include uploaded data from other laptops</label>
+        <label class="check"><input type="checkbox" id="dl-imp" checked> Use the uploaded sheet (untick to see only the live data recorded on this laptop)</label>
         <label class="check"><input type="checkbox" id="dl-sim"> Include simulated (test) participants</label>
         <div class="actions" style="justify-content:flex-start;flex-wrap:wrap">
           <a class="btn primary" id="dl-xlsx" href="#">Download Excel (Pilot + Main)</a>
           <a class="btn" id="dl-pcsv" href="#">Pilot CSV</a>
           <a class="btn" id="dl-mcsv" href="#">Main CSV</a></div></div>
-      <div class="panel"><h2>Upload a sheet from another laptop</h2>
-        <p>Upload an Excel file downloaded from another laptop's dashboard (or a CSV with the same columns and a <b>study</b> column). Its rows are shown below and included in your downloads.
-        Rows already here are skipped, so uploading the same file twice is safe. This laptop's own rows are always read live, never from an upload.</p>
-        <p class="small muted">Uploaded rows are summaries (one row per round). They appear in this tab and in downloads, but the pilot threshold analysis and the main-study charts use only data recorded on this laptop, because those need the raw mouse movement.</p>
+      <div class="panel"><h2>Upload an Excel sheet (replaces the current sheet)</h2>
+        <p>Upload an Excel file with the same columns as the download (sheets <b>Pilot</b> and <b>Main</b>), or a CSV with the same columns and a <b>study</b> column.
+        The upload <b>overwrites</b> the current sheet: everything recorded up to now is shown exactly as it is in the file (edited values are kept, rows you deleted stay hidden), and it replaces any earlier upload.
+        Every round recorded on this laptop <b>after</b> the upload (new participants) is added below it automatically.</p>
+        <p class="small muted">A CSV with only one study replaces only that study. A backup is made before every upload.
+        The pilot threshold analysis, the freeze and the main-study charts always use the raw data recorded on this laptop, not the uploaded sheet, because they need the mouse movement.</p>
         <input type="file" id="up-file" accept=".xlsx,.csv">
         <div class="actions" style="justify-content:flex-start"><button class="primary" id="up-go">Upload</button></div>
         <div id="up-out"></div><div id="up-list"></div></div>
@@ -183,14 +185,16 @@ const TABS = {
         : '<p class="muted">No rows yet.</p>';
     };
     const listImports = imps => {
-      view.querySelector("#up-list").innerHTML = imps.length ? "<h3 style='margin-top:16px'>Uploaded files</h3>" + table([
-        ["File", b => esc(b.filename)], ["Uploaded", b => esc(String(b.uploaded_at).slice(0, 16))], ["Rows added", b => b.rows_added],
-        ["", b => `<button class="small danger" data-delimp="${b.id}">Remove</button>`]], imps) : "";
-      view.querySelectorAll("[data-delimp]").forEach(b => b.onclick = async () => {
-        if (!confirm("Remove the rows that came from this upload? (A backup is made first.)")) return;
-        await API.del(`/api/admin/imports/${b.dataset.delimp}`);
+      view.querySelector("#up-list").innerHTML = imps.length ? "<h3 style='margin-top:16px'>Current uploaded sheet</h3>" + table([
+        ["File", b => esc(b.filename)], ["Uploaded", b => esc(String(b.uploaded_at).slice(0, 16))], ["Rows", b => b.rows_added]], imps)
+        + `<div class="actions" style="justify-content:flex-start"><button class="danger" id="clearimp">Clear uploaded sheet (go back to live data only)</button></div>` : "";
+      const cb = view.querySelector("#clearimp");
+      if (cb) cb.onclick = async () => {
+        if (!confirm("Remove the uploaded sheet? The dashboard will show only the data recorded on this laptop. (A backup is made first.)")) return;
+        await API.del("/api/admin/imports");
+        view.querySelector("#up-out").innerHTML = "";
         load();
-      });
+      };
     };
     const load = async () => {
       sheet = await API.get(`/api/admin/sheet?study=${study}&${q()}`);
@@ -212,14 +216,18 @@ const TABS = {
       const f = view.querySelector("#up-file").files[0];
       const out = view.querySelector("#up-out");
       if (!f) { out.innerHTML = '<p class="notice">Choose a file first.</p>'; return; }
+      if (!confirm(`Upload "${f.name}"? It replaces the current sheet (a backup is made first).`)) return;
       out.innerHTML = '<p class="muted">Uploading…</p>';
       try {
         const r = await fetch(`/api/admin/import?filename=${encodeURIComponent(f.name)}`, { method: "POST", body: f, credentials: "same-origin" });
         const d = await r.json();
         if (!r.ok) throw new Error(d.detail || "Upload failed");
         const per = Object.entries(d.per_study).map(([k, v]) => `${k}: ${v}`).join(", ") || "none";
-        out.innerHTML = `<div class="notice good"><b>${d.added}</b> rows added (${per}).
-          Skipped: ${d.skipped_duplicates} already here, ${d.skipped_own_laptop} from this laptop, ${d.skipped_empty} empty.
+        out.innerHTML = `<div class="notice good"><b>${d.added}</b> rows loaded (${per}). The uploaded sheet is now the current sheet.
+          ${d.replaced_previous ? `Replaced ${d.replaced_previous} rows from the previous upload.` : ""}
+          ${d.overrides_live ? `${d.overrides_live} rows replace this laptop's live rows for the same participant and round.` : ""}
+          ${d.duplicates_in_file ? `${d.duplicates_in_file} repeated rows in the file (the last one was kept).` : ""}
+          ${d.skipped_empty ? `${d.skipped_empty} empty rows skipped.` : ""}
           ${d.missing_columns.length ? `<br>Columns missing in the file (left blank): ${esc(d.missing_columns.join(", "))}` : ""}
           ${d.ignored_columns.length ? `<br>Unknown columns ignored: ${esc(d.ignored_columns.join(", "))}` : ""}</div>`;
         view.querySelector("#up-file").value = "";
