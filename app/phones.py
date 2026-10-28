@@ -35,7 +35,7 @@ def score_choice(set_id, phone_id, task_kind):
 
 
 def public_set(set_id):
-    """What the browser may see: no roles or ranks (so answers cannot be read from the page)."""
+    """What the browser may see: no roles, ranks or hidden true values (so answers cannot be read from the page)."""
     s = get_set(set_id)
-    phones = [{k: v for k, v in p.items() if k not in ("role", "rank")} for p in s["phones"]]
+    phones = [{k: v for k, v in p.items() if k not in ("role", "rank") and not k.startswith("_")} for p in s["phones"]]
     return {"id": set_id, "card": s["card"], "phones": phones, "spec_labels": catalog()["spec_labels"]}

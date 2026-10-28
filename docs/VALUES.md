@@ -79,3 +79,15 @@ To run one: copy the detector settings, change one value, and call `analysis.pil
 with that configuration.
 
 **Please check every reference on Google Scholar before using it in slides.**
+
+## Phone sets (app/data/phone_sets.json)
+
+| Choice | Why |
+| --- | --- |
+| No summary scores (no "x / 100") | A single score turns the choice into a lookup. Real shoppers see spec-sheet terms and lab measurements, so hesitation comes from interpreting them. |
+| Mixed units (minutes vs hours, GB vs TB vs MB, millions vs Indian lakhs, nits vs cd/m²) | Comparing needs conversion, as in real reviews; this is where "Explain a spec" and "Compare" help is genuinely useful. |
+| "Bigger is not better" terms (lower lux, lower f-number, 1/1.4" sensor larger than 1/1.56", optical vs digital zoom) | Common real-world misreadings; the main trap exploits them. |
+| Real trade-off: the correct phone wins Priority 1, the main trap wins Priority 2 and has flashier headline specs | No option dominates on everything the buyer wants, which is what creates genuine hesitation (choice under conflict). |
+| One defensible correct answer, hidden true values per phone | Decision quality stays objective. `tests/test_phone_sets.py` checks every set: correct phone best on Priority 1 within budget, trap better on Priority 2, second trap over budget, dominated phone worse on everything. |
+| Pilot target 40–60% correct without AI | If a set is much easier or harder, change its numbers in the JSON and re-run the tests. |
+

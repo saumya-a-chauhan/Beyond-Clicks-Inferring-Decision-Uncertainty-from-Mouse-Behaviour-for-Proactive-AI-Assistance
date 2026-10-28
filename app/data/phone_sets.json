@@ -1,104 +1,973 @@
 {
-  "_note": "Fictional phones. Each main set has 1 correct (rank 1), 1 main trap (rank 2), 1 second trap (rank 3), 1 dominated (rank 4). Ranks are defined by the requirement card's ranked priorities using the lab-tested values in 'details', not the headline specs. Card positions are shuffled per participant.",
-  "spec_labels": {
-    "price": "Price",
-    "battery": "Battery",
-    "chip": "Processor",
-    "display": "Display",
-    "camera": "Camera",
-    "storage": "RAM / Storage"
-  },
-  "sets": {
-    "P": {
-      "kind": "practice",
-      "card": {
-        "persona": "Practice round.",
-        "text": "Buy the phone with the most storage.",
-        "budget": null,
-        "priorities": ["storage"]
-      },
-      "phones": [
-        {"id": "P1", "name": "Alpha One", "colours": ["Black", "Silver"], "specs": {"price": "₹15,999", "battery": "5000 mAh", "chip": "Dimensity 6080 (6 nm)", "display": "6.5\" LCD, 90 Hz", "camera": "50 MP", "storage": "6 GB / 128 GB"}, "details": [["Lab battery test", "11.0 hours screen-on"], ["Lab camera score", "64 / 100"]], "review": "A plain everyday phone. Fine for calls, chat and video."},
-        {"id": "P2", "name": "Beta Air", "colours": ["White", "Black"], "specs": {"price": "₹17,499", "battery": "5000 mAh", "chip": "Snapdragon 4 Gen 2 (4 nm)", "display": "6.6\" LCD, 120 Hz", "camera": "50 MP", "storage": "8 GB / 128 GB"}, "details": [["Lab battery test", "12.1 hours screen-on"], ["Lab camera score", "66 / 100"]], "review": "Light and smooth for the price. Light with a smooth screen."},
-        {"id": "P3", "name": "Gamma Plus", "colours": ["Black", "Green"], "specs": {"price": "₹18,999", "battery": "5000 mAh", "chip": "Helio G99 (6 nm)", "display": "6.7\" AMOLED, 90 Hz", "camera": "64 MP", "storage": "8 GB / 512 GB"}, "details": [["Lab battery test", "11.6 hours screen-on"], ["Lab camera score", "68 / 100"]], "review": "Huge storage for photos and videos."},
-        {"id": "P4", "name": "Delta Go", "colours": ["Blue", "Red"], "specs": {"price": "₹14,499", "battery": "5000 mAh", "chip": "Unisoc T616 (12 nm)", "display": "6.5\" LCD, 90 Hz", "camera": "48 MP", "storage": "4 GB / 64 GB"}, "details": [["Lab battery test", "10.2 hours screen-on"], ["Lab camera score", "55 / 100"]], "review": "The cheapest option here. Basic but works."}
+ "_note": "Fictional phones. No summary scores are shown: only spec-sheet terms and lab measurements, written in mixed units on purpose (minutes vs hours, GB vs TB vs MB, millions vs lakhs; lower lux and lower f-numbers are better; a larger sensor has a smaller second number). Each main set has 1 correct phone (rank 1), 1 main trap (rank 2), 1 second trap (rank 3) and 1 dominated phone (rank 4). The correct phone is the best phone within budget on the card's Priority 1, decided by the lab measurement in '_truth' (hidden from the browser). The main trap is better on Priority 2 and has flashier headline specs, so it is a real trade-off. The second trap is over budget. The dominated phone is worse than the correct phone on every measured value and costs the same or more. tests/test_phone_sets.py checks all of this. Card positions are shuffled per participant.",
+ "spec_labels": {
+  "price": "Price",
+  "battery": "Battery",
+  "chip": "Processor",
+  "display": "Display",
+  "camera": "Camera",
+  "storage": "RAM / Storage"
+ },
+ "sets": {
+  "P": {
+   "kind": "practice",
+   "card": {
+    "persona": "Practice round.",
+    "text": "Buy the phone with the most storage.",
+    "budget": null,
+    "priorities": [
+     "storage"
+    ]
+   },
+   "phones": [
+    {
+     "id": "P1",
+     "name": "Alpha One",
+     "colours": [
+      "Black",
+      "Silver"
+     ],
+     "specs": {
+      "price": "₹15,999",
+      "battery": "5000 mAh",
+      "chip": "Dimensity 6080 (6 nm)",
+      "display": "6.5\" LCD, 90 Hz",
+      "camera": "50 MP",
+      "storage": "6 GB / 128 GB"
+     },
+     "details": [
+      [
+       "Screen-on time (lab)",
+       "11 h"
       ],
-      "answers": {"baseline1": "P4", "baseline2": "P2", "practice": "P3"}
-    },
-    "S1": {
-      "kind": "main",
-      "card": {
-        "persona": "You are buying a phone for your younger sibling who is starting college.",
-        "text": "Budget: up to ₹25,000. Priority 1: battery life. Priority 2: a good camera. They do not play games.",
-        "budget": 25000,
-        "priorities": ["battery", "camera"]
-      },
-      "phones": [
-        {"id": "S1A", "role": "correct", "rank": 1, "name": "Nova X2", "colours": ["Black", "Green"], "specs": {"price": "₹24,999", "battery": "5000 mAh", "chip": "Snapdragon 7s Gen 3 (4 nm)", "display": "6.6\" AMOLED, 120 Hz", "camera": "50 MP, large 1/1.56\" sensor, OIS", "storage": "8 GB / 256 GB"}, "details": [["Lab battery test", "14.5 hours screen-on"], ["Lab camera score", "82 / 100"], ["Performance score", "62 / 100"]], "review": "Excellent battery life thanks to the efficient 4 nm chip and AMOLED screen. Sharp, steady photos in low light because of optical stabilisation (OIS)."},
-        {"id": "S1B", "role": "trap_main", "rank": 2, "name": "Zen 5 Max", "colours": ["Blue", "Black"], "specs": {"price": "₹23,499", "battery": "6000 mAh", "chip": "Dimensity 6100 (6 nm)", "display": "6.7\" LCD, 144 Hz", "camera": "108 MP, no OIS", "storage": "8 GB / 128 GB"}, "details": [["Lab battery test", "11.2 hours screen-on"], ["Lab camera score", "71 / 100"], ["Performance score", "48 / 100"]], "review": "Big battery on paper, but the older 6 nm chip and bright 144 Hz LCD drain it faster. 108 MP photos look fine in daylight but blur indoors without OIS."},
-        {"id": "S1C", "role": "trap_second", "rank": 3, "name": "Volt Pro", "colours": ["Red", "Black"], "specs": {"price": "₹25,999", "battery": "4500 mAh", "chip": "Snapdragon 8 Gen 2 (4 nm)", "display": "6.7\" AMOLED, 144 Hz", "camera": "64 MP, OIS", "storage": "12 GB / 256 GB"}, "details": [["Lab battery test", "9.4 hours screen-on"], ["Lab camera score", "76 / 100"], ["Performance score", "95 / 100"]], "review": "A gaming powerhouse with a flagship chip. Battery life is short under the powerful chip, and it is slightly over ₹25,000."},
-        {"id": "S1D", "role": "dominated", "rank": 4, "name": "Pixa 4", "colours": ["White", "Blue"], "specs": {"price": "₹24,999", "battery": "4500 mAh", "chip": "Dimensity 6080 (6 nm)", "display": "6.5\" LCD, 90 Hz", "camera": "48 MP, no OIS", "storage": "6 GB / 128 GB"}, "details": [["Lab battery test", "10.1 hours screen-on"], ["Lab camera score", "63 / 100"], ["Performance score", "45 / 100"]], "review": "Simple and reliable, but weaker than others at this price on battery, camera and storage."}
+      [
+       "Low-light camera test",
+       "sharp photos down to 9 lux"
       ]
+     ],
+     "review": "A plain everyday phone. Fine for calls, chat and video."
     },
-    "S2": {
-      "kind": "main",
-      "card": {
-        "persona": "You are buying a phone for a friend who loves photography and watching videos outdoors.",
-        "text": "Budget: up to ₹30,000. Priority 1: the best camera. Priority 2: a bright, clear display.",
-        "budget": 30000,
-        "priorities": ["camera", "display"]
-      },
-      "phones": [
-        {"id": "S2A", "role": "correct", "rank": 1, "name": "Lumo C7", "colours": ["Silver", "Black"], "specs": {"price": "₹29,499", "battery": "4800 mAh", "chip": "Snapdragon 7 Gen 3 (4 nm)", "display": "6.7\" AMOLED, 120 Hz, 1800 nits", "camera": "50 MP, 1/1.4\" sensor, OIS + 50 MP telephoto", "storage": "8 GB / 256 GB"}, "details": [["Lab camera score", "88 / 100"], ["Display lab score", "87 / 100"], ["Lab battery test", "12.8 hours screen-on"]], "review": "The best camera in its class: a large stabilised main sensor plus a real telephoto lens for zoom. Very bright AMOLED screen stays readable in sunlight."},
-        {"id": "S2B", "role": "trap_main", "rank": 2, "name": "Orbit 200", "colours": ["Purple", "Black"], "specs": {"price": "₹27,999", "battery": "5000 mAh", "chip": "Dimensity 7050 (6 nm)", "display": "6.7\" AMOLED, 120 Hz, 1000 nits", "camera": "200 MP, no OIS", "storage": "8 GB / 256 GB"}, "details": [["Lab camera score", "77 / 100"], ["Display lab score", "74 / 100"], ["Lab battery test", "13.0 hours screen-on"]], "review": "The 200 MP number is eye-catching, but without stabilisation night and zoom shots are softer. The screen is dimmer outdoors."},
-        {"id": "S2C", "role": "trap_second", "rank": 3, "name": "Kite S", "colours": ["Blue", "Grey"], "specs": {"price": "₹31,999", "battery": "4700 mAh", "chip": "Snapdragon 8s Gen 3 (4 nm)", "display": "6.8\" AMOLED, 144 Hz, 2600 nits", "camera": "50 MP, OIS", "storage": "12 GB / 256 GB"}, "details": [["Lab camera score", "84 / 100"], ["Display lab score", "92 / 100"], ["Lab battery test", "11.5 hours screen-on"]], "review": "The brightest screen here and a good camera, but no telephoto and it is ₹1,999 over budget."},
-        {"id": "S2D", "role": "dominated", "rank": 4, "name": "Echo 9", "colours": ["Black", "White"], "specs": {"price": "₹29,999", "battery": "4800 mAh", "chip": "Helio G99 (6 nm)", "display": "6.6\" LCD, 90 Hz, 600 nits", "camera": "64 MP, no OIS", "storage": "8 GB / 128 GB"}, "details": [["Lab camera score", "66 / 100"], ["Display lab score", "58 / 100"], ["Lab battery test", "11.9 hours screen-on"]], "review": "Priced like the others but behind on camera, screen and storage."}
+    {
+     "id": "P2",
+     "name": "Beta Air",
+     "colours": [
+      "White",
+      "Black"
+     ],
+     "specs": {
+      "price": "₹17,499",
+      "battery": "5000 mAh",
+      "chip": "Snapdragon 4 Gen 2 (4 nm)",
+      "display": "6.6\" LCD, 120 Hz",
+      "camera": "50 MP",
+      "storage": "8 GB / 128 GB"
+     },
+     "details": [
+      [
+       "Screen-on time (lab)",
+       "726 minutes"
+      ],
+      [
+       "Low-light camera test",
+       "sharp photos down to 8 lux"
       ]
+     ],
+     "review": "Light, with a smooth 120 Hz screen."
     },
-    "S3": {
-      "kind": "main",
-      "card": {
-        "persona": "You are buying a phone for your parent who mostly watches videos and keeps lots of family photos.",
-        "text": "Budget: up to ₹22,000. Priority 1: a good screen for watching videos. Priority 2: plenty of storage.",
-        "budget": 22000,
-        "priorities": ["display", "storage"]
-      },
-      "phones": [
-        {"id": "S3A", "role": "correct", "rank": 1, "name": "Aero 3", "colours": ["Green", "Black"], "specs": {"price": "₹21,999", "battery": "5000 mAh", "chip": "Dimensity 7025 (6 nm)", "display": "6.7\" AMOLED, 120 Hz, 1400 nits", "camera": "50 MP, OIS", "storage": "8 GB / 256 GB"}, "details": [["Display lab score", "86 / 100"], ["Usable storage", "about 230 GB free"], ["Lab battery test", "13.0 hours screen-on"]], "review": "A rich, bright AMOLED screen with deep blacks, great for videos. 256 GB holds years of photos."},
-        {"id": "S3B", "role": "trap_main", "rank": 2, "name": "Glide 6 Plus", "colours": ["Blue", "Silver"], "specs": {"price": "₹20,999", "battery": "5500 mAh", "chip": "Helio G99 (6 nm)", "display": "6.8\" LCD, 144 Hz, 600 nits", "camera": "64 MP", "storage": "8 GB + 8 GB virtual RAM / 128 GB"}, "details": [["Display lab score", "64 / 100"], ["Usable storage", "about 105 GB free"], ["Lab battery test", "12.4 hours screen-on"]], "review": "Bigger and faster-refreshing screen on paper, but the LCD panel is dim with greyish blacks. 'Virtual RAM' borrows from storage and does not add storage space."},
-        {"id": "S3C", "role": "trap_second", "rank": 3, "name": "Spark 12", "colours": ["Black", "Gold"], "specs": {"price": "₹23,499", "battery": "5000 mAh", "chip": "Snapdragon 7s Gen 2 (4 nm)", "display": "6.7\" AMOLED, 120 Hz, 1600 nits", "camera": "50 MP, OIS", "storage": "8 GB / 128 GB"}, "details": [["Display lab score", "90 / 100"], ["Usable storage", "about 105 GB free"], ["Lab battery test", "13.4 hours screen-on"]], "review": "An excellent screen, but only 128 GB and ₹1,499 over budget."},
-        {"id": "S3D", "role": "dominated", "rank": 4, "name": "Mira 2", "colours": ["White", "Pink"], "specs": {"price": "₹21,999", "battery": "5000 mAh", "chip": "Unisoc T616 (12 nm)", "display": "6.6\" LCD, 90 Hz, 500 nits", "camera": "48 MP", "storage": "6 GB / 128 GB"}, "details": [["Display lab score", "55 / 100"], ["Usable storage", "about 102 GB free"], ["Lab battery test", "10.8 hours screen-on"]], "review": "Same price as better options, with a dim screen and less storage."}
+    {
+     "id": "P3",
+     "name": "Gamma Plus",
+     "colours": [
+      "Black",
+      "Green"
+     ],
+     "specs": {
+      "price": "₹18,999",
+      "battery": "5000 mAh",
+      "chip": "Helio G99 (6 nm)",
+      "display": "6.7\" AMOLED, 90 Hz",
+      "camera": "64 MP",
+      "storage": "8 GB / 512 GB"
+     },
+     "details": [
+      [
+       "Screen-on time (lab)",
+       "11 h 35 min"
+      ],
+      [
+       "Low-light camera test",
+       "sharp photos down to 7 lux"
       ]
+     ],
+     "review": "Huge storage for photos and videos."
     },
-    "S4": {
-      "kind": "main",
-      "card": {
-        "persona": "You are buying a phone for your cousin who plays mobile games every day.",
-        "text": "Budget: up to ₹28,000. Priority 1: smooth gaming performance. Priority 2: battery life.",
-        "budget": 28000,
-        "priorities": ["chip", "battery"]
-      },
-      "phones": [
-        {"id": "S4A", "role": "correct", "rank": 1, "name": "Volt 7", "colours": ["Black", "Orange"], "specs": {"price": "₹27,999", "battery": "5500 mAh", "chip": "Snapdragon 8s Gen 3 (4 nm)", "display": "6.7\" AMOLED, 144 Hz", "camera": "50 MP, OIS", "storage": "8 GB / 256 GB"}, "details": [["Performance score", "90 / 100"], ["Performance after 30 min of gaming", "85% (stays cool)"], ["Lab battery test", "12.6 hours screen-on"]], "review": "Near-flagship chip that keeps its speed during long games. Large battery with an efficient chip lasts well."},
-        {"id": "S4B", "role": "trap_main", "rank": 2, "name": "Titan GT", "colours": ["Black", "Red"], "specs": {"price": "₹26,999", "battery": "6000 mAh", "chip": "Dimensity 7300 (4 nm), Gaming Mode", "display": "6.7\" AMOLED, 144 Hz", "camera": "64 MP", "storage": "16 GB / 256 GB"}, "details": [["Performance score", "74 / 100"], ["Performance after 30 min of gaming", "62% (slows down when hot)"], ["Lab battery test", "11.8 hours screen-on"]], "review": "16 GB RAM and 'Gaming Mode' sound great, but the mid-range chip is clearly slower and throttles in long sessions. More RAM does not make games run faster."},
-        {"id": "S4C", "role": "trap_second", "rank": 3, "name": "Nova Ultra", "colours": ["Silver", "Black"], "specs": {"price": "₹29,999", "battery": "4700 mAh", "chip": "Snapdragon 8 Gen 3 (4 nm)", "display": "6.8\" AMOLED, 120 Hz", "camera": "50 MP, OIS", "storage": "12 GB / 256 GB"}, "details": [["Performance score", "97 / 100"], ["Performance after 30 min of gaming", "80%"], ["Lab battery test", "9.8 hours screen-on"]], "review": "The fastest chip here, but ₹1,999 over budget and the smaller battery drains quickly while gaming."},
-        {"id": "S4D", "role": "dominated", "rank": 4, "name": "Pulse 5", "colours": ["Blue", "Black"], "specs": {"price": "₹27,999", "battery": "5000 mAh", "chip": "Snapdragon 6 Gen 1 (4 nm)", "display": "6.6\" LCD, 120 Hz", "camera": "50 MP", "storage": "8 GB / 128 GB"}, "details": [["Performance score", "58 / 100"], ["Performance after 30 min of gaming", "70%"], ["Lab battery test", "11.0 hours screen-on"]], "review": "Same price as the Volt 7 but slower, with a shorter battery and less storage."}
+    {
+     "id": "P4",
+     "name": "Delta Go",
+     "colours": [
+      "Blue",
+      "Red"
+     ],
+     "specs": {
+      "price": "₹14,499",
+      "battery": "5000 mAh",
+      "chip": "Unisoc T616 (12 nm)",
+      "display": "6.5\" LCD, 90 Hz",
+      "camera": "48 MP",
+      "storage": "4 GB / 64 GB"
+     },
+     "details": [
+      [
+       "Screen-on time (lab)",
+       "10.2 hours"
+      ],
+      [
+       "Low-light camera test",
+       "sharp photos down to 12 lux"
       ]
-    },
-    "S5": {
-      "kind": "pilot_ai",
-      "card": {
-        "persona": "You are buying a phone for your grandparent who forgets to charge it and keeps many videos from family.",
-        "text": "Budget: up to ₹20,000. Priority 1: battery life. Priority 2: plenty of storage.",
-        "budget": 20000,
-        "priorities": ["battery", "storage"]
-      },
-      "phones": [
-        {"id": "S5A", "role": "correct", "rank": 1, "name": "Dura M5", "colours": ["Black", "Blue"], "specs": {"price": "₹19,499", "battery": "6000 mAh", "chip": "Snapdragon 6s Gen 3 (6 nm)", "display": "6.7\" LCD, 120 Hz", "camera": "50 MP", "storage": "8 GB / 256 GB"}, "details": [["Lab battery test", "15.2 hours screen-on"], ["Usable storage", "about 230 GB free"]], "review": "Lasts the longest of all here and has plenty of storage."},
-        {"id": "S5B", "role": "trap_main", "rank": 2, "name": "Max 7", "colours": ["Green", "Black"], "specs": {"price": "₹18,999", "battery": "7000 mAh", "chip": "Helio G85 (12 nm)", "display": "6.8\" LCD, 90 Hz", "camera": "50 MP", "storage": "6 GB + 6 GB virtual RAM / 128 GB"}, "details": [["Lab battery test", "13.1 hours screen-on"], ["Usable storage", "about 105 GB free"]], "review": "The biggest battery number, but the old 12 nm chip uses more power. Virtual RAM does not add storage."},
-        {"id": "S5C", "role": "trap_second", "rank": 3, "name": "Flow 3", "colours": ["White", "Black"], "specs": {"price": "₹20,999", "battery": "5000 mAh", "chip": "Dimensity 7025 (6 nm)", "display": "6.6\" AMOLED, 120 Hz", "camera": "50 MP, OIS", "storage": "8 GB / 256 GB"}, "details": [["Lab battery test", "12.0 hours screen-on"], ["Usable storage", "about 230 GB free"]], "review": "Nice screen and storage, but ₹999 over budget and shorter battery life."},
-        {"id": "S5D", "role": "dominated", "rank": 4, "name": "Base 2", "colours": ["Grey", "Blue"], "specs": {"price": "₹19,499", "battery": "5000 mAh", "chip": "Unisoc T606 (12 nm)", "display": "6.5\" LCD, 90 Hz", "camera": "13 MP", "storage": "4 GB / 128 GB"}, "details": [["Lab battery test", "11.0 hours screen-on"], ["Usable storage", "about 102 GB free"]], "review": "Same price as the Dura M5 with less battery life and storage."}
-      ]
+     ],
+     "review": "The cheapest option here. Basic but works."
     }
+   ],
+   "answers": {
+    "baseline1": "P4",
+    "baseline2": "P2",
+    "practice": "P3"
+   }
+  },
+  "S1": {
+   "kind": "main",
+   "card": {
+    "persona": "Your younger sibling is starting college and will be out of the hostel from morning to night.",
+    "text": "Budget: up to ₹25,000. Priority 1: the battery must last the whole long day. Priority 2: good photos indoors and at night. Not needed: gaming.",
+    "budget": 25000,
+    "priorities": [
+     "battery",
+     "camera"
+    ]
+   },
+   "phones": [
+    {
+     "id": "S1A",
+     "role": "correct",
+     "rank": 1,
+     "name": "Nova X2",
+     "colours": [
+      "Black",
+      "Green"
+     ],
+     "specs": {
+      "price": "₹24,999",
+      "battery": "5000 mAh",
+      "chip": "Snapdragon 7s Gen 3 (4 nm)",
+      "display": "6.6\" AMOLED, 120 Hz (LTPO)",
+      "camera": "50 MP, 1/1.56\" sensor, f/1.8, OIS",
+      "storage": "8 GB / 256 GB"
+     },
+     "details": [
+      [
+       "Screen-on time (lab)",
+       "13 h 50 min"
+      ],
+      [
+       "Low-light camera test",
+       "sharp photos down to 4 lux"
+      ],
+      [
+       "AnTuTu benchmark",
+       "8,20,000"
+      ]
+     ],
+     "review": "Still had charge left at night in our day-long test. Indoor photos are good, though very dark scenes get a little soft.",
+     "_truth": {
+      "battery_h": 13.83,
+      "lowlight_lux": 4,
+      "antutu": 820000,
+      "price": 24999
+     }
+    },
+    {
+     "id": "S1B",
+     "role": "trap_main",
+     "rank": 2,
+     "name": "Zen 5 Max",
+     "colours": [
+      "Blue",
+      "Black"
+     ],
+     "specs": {
+      "price": "₹23,499",
+      "battery": "6000 mAh",
+      "chip": "Dimensity 6100+ (6 nm)",
+      "display": "6.7\" LCD, 144 Hz",
+      "camera": "108 MP, 1/1.4\" sensor, f/1.7, OIS",
+      "storage": "8 GB / 128 GB"
+     },
+     "details": [
+      [
+       "Screen-on time (lab)",
+       "760 minutes"
+      ],
+      [
+       "Low-light camera test",
+       "sharp photos down to 2 lux"
+      ],
+      [
+       "AnTuTu benchmark",
+       "5,30,000"
+      ]
+     ],
+     "review": "A big 6000 mAh battery and a large, bright camera sensor that shines at night. The 144 Hz LCD screen is very smooth to scroll.",
+     "_truth": {
+      "battery_h": 12.67,
+      "lowlight_lux": 2,
+      "antutu": 530000,
+      "price": 23499
+     }
+    },
+    {
+     "id": "S1C",
+     "role": "trap_second",
+     "rank": 3,
+     "name": "Volt Pro",
+     "colours": [
+      "Red",
+      "Black"
+     ],
+     "specs": {
+      "price": "₹25,999",
+      "battery": "4500 mAh",
+      "chip": "Snapdragon 8 Gen 2 (4 nm)",
+      "display": "6.7\" AMOLED, 144 Hz",
+      "camera": "64 MP, 1/1.5\" sensor, f/1.8, OIS",
+      "storage": "12 GB / 256 GB"
+     },
+     "details": [
+      [
+       "Screen-on time (lab)",
+       "11.4 hours"
+      ],
+      [
+       "Low-light camera test",
+       "sharp photos down to 3 lux"
+      ],
+      [
+       "AnTuTu benchmark",
+       "1.21 million"
+      ]
+     ],
+     "review": "A flagship-class processor that flies through games. Good night photos; the battery is average.",
+     "_truth": {
+      "battery_h": 11.4,
+      "lowlight_lux": 3,
+      "antutu": 1210000,
+      "price": 25999
+     }
+    },
+    {
+     "id": "S1D",
+     "role": "dominated",
+     "rank": 4,
+     "name": "Pixa 4",
+     "colours": [
+      "White",
+      "Blue"
+     ],
+     "specs": {
+      "price": "₹24,999",
+      "battery": "5000 mAh",
+      "chip": "Helio G99 (6 nm)",
+      "display": "6.5\" LCD, 90 Hz",
+      "camera": "50 MP, 1/2.8\" sensor, f/2.0",
+      "storage": "6 GB / 128 GB"
+     },
+     "details": [
+      [
+       "Screen-on time (lab)",
+       "9 h 55 min"
+      ],
+      [
+       "Low-light camera test",
+       "sharp photos down to 10 lux"
+      ],
+      [
+       "AnTuTu benchmark",
+       "4,10,000"
+      ]
+     ],
+     "review": "Simple and dependable for calls, chat and social media. Photos are fine in daylight.",
+     "_truth": {
+      "battery_h": 9.92,
+      "lowlight_lux": 10,
+      "antutu": 410000,
+      "price": 24999
+     }
+    }
+   ]
+  },
+  "S2": {
+   "kind": "main",
+   "card": {
+    "persona": "Your aunt wants to photograph her grandchildren on stage at school functions, sitting far back in the audience, and she uses her phone a lot outdoors.",
+    "text": "Budget: up to ₹30,000. Priority 1: a camera that zooms in clearly from far away. Priority 2: a screen that is easy to see in bright sunlight.",
+    "budget": 30000,
+    "priorities": [
+     "camera",
+     "display"
+    ]
+   },
+   "phones": [
+    {
+     "id": "S2A",
+     "role": "correct",
+     "rank": 1,
+     "name": "Lumo C7",
+     "colours": [
+      "Silver",
+      "Lavender"
+     ],
+     "specs": {
+      "price": "₹29,499",
+      "battery": "5000 mAh",
+      "chip": "Dimensity 7300 (4 nm)",
+      "display": "6.7\" AMOLED, 120 Hz",
+      "camera": "50 MP main + 50 MP telephoto (3× optical), OIS",
+      "storage": "8 GB / 256 GB"
+     },
+     "details": [
+      [
+       "Zoom test (lab)",
+       "faces stay sharp up to 6×"
+      ],
+      [
+       "Peak brightness (lab)",
+       "1,200 nits"
+      ],
+      [
+       "Screen-on time (lab)",
+       "12 h 30 min"
+      ]
+     ],
+     "review": "The telephoto lens brings far-away subjects close. The screen is pleasant indoors; in strong sun you may need to shade it.",
+     "_truth": {
+      "zoom_x": 6,
+      "nits": 1200,
+      "battery_h": 12.5,
+      "price": 29499
+     }
+    },
+    {
+     "id": "S2B",
+     "role": "trap_main",
+     "rank": 2,
+     "name": "Orbit 200",
+     "colours": [
+      "Black",
+      "Gold"
+     ],
+     "specs": {
+      "price": "₹27,999",
+      "battery": "5000 mAh",
+      "chip": "Snapdragon 7s Gen 2 (4 nm)",
+      "display": "6.8\" AMOLED, 120 Hz",
+      "camera": "200 MP main, 100× digital zoom",
+      "storage": "12 GB / 256 GB"
+     },
+     "details": [
+      [
+       "Zoom test (lab)",
+       "faces stay sharp up to 2×"
+      ],
+      [
+       "Peak brightness (lab)",
+       "1,800 cd/m²"
+      ],
+      [
+       "Screen-on time (lab)",
+       "740 minutes"
+      ]
+     ],
+     "review": "A huge 200 MP camera with up to 100× zoom on the spec sheet, and a very bright screen that stays readable outside.",
+     "_truth": {
+      "zoom_x": 2,
+      "nits": 1800,
+      "battery_h": 12.33,
+      "price": 27999
+     }
+    },
+    {
+     "id": "S2C",
+     "role": "trap_second",
+     "rank": 3,
+     "name": "Kite S",
+     "colours": [
+      "Blue",
+      "White"
+     ],
+     "specs": {
+      "price": "₹31,999",
+      "battery": "4800 mAh",
+      "chip": "Snapdragon 7+ Gen 3 (4 nm)",
+      "display": "6.7\" AMOLED, 120 Hz",
+      "camera": "50 MP main + 50 MP telephoto (3× optical), OIS",
+      "storage": "12 GB / 256 GB"
+     },
+     "details": [
+      [
+       "Zoom test (lab)",
+       "faces stay sharp up to 5×"
+      ],
+      [
+       "Peak brightness (lab)",
+       "2,000 nits"
+      ],
+      [
+       "Screen-on time (lab)",
+       "11.1 hours"
+      ]
+     ],
+     "review": "Excellent zoom and a dazzling screen in a premium design.",
+     "_truth": {
+      "zoom_x": 5,
+      "nits": 2000,
+      "battery_h": 11.1,
+      "price": 31999
+     }
+    },
+    {
+     "id": "S2D",
+     "role": "dominated",
+     "rank": 4,
+     "name": "Echo 9",
+     "colours": [
+      "Grey",
+      "Green"
+     ],
+     "specs": {
+      "price": "₹29,999",
+      "battery": "5000 mAh",
+      "chip": "Helio G99 (6 nm)",
+      "display": "6.6\" LCD, 90 Hz",
+      "camera": "64 MP main, 10× digital zoom",
+      "storage": "8 GB / 128 GB"
+     },
+     "details": [
+      [
+       "Zoom test (lab)",
+       "faces stay sharp up to 1.5×"
+      ],
+      [
+       "Peak brightness (lab)",
+       "800 nits"
+      ],
+      [
+       "Screen-on time (lab)",
+       "10 h 20 min"
+      ]
+     ],
+     "review": "A solid everyday phone with a 64 MP camera and digital zoom.",
+     "_truth": {
+      "zoom_x": 1.5,
+      "nits": 800,
+      "battery_h": 10.33,
+      "price": 29999
+     }
+    }
+   ]
+  },
+  "S3": {
+   "kind": "main",
+   "card": {
+    "persona": "Your cousin travels home by train every weekend with no internet on the way, and downloads many movies before leaving.",
+    "text": "Budget: up to ₹22,000. Priority 1: as much free space as possible for downloaded movies. Priority 2: a good screen for watching them.",
+    "budget": 22000,
+    "priorities": [
+     "storage",
+     "display"
+    ]
+   },
+   "phones": [
+    {
+     "id": "S3A",
+     "role": "correct",
+     "rank": 1,
+     "name": "Aero 3",
+     "colours": [
+      "Black",
+      "Teal"
+     ],
+     "specs": {
+      "price": "₹21,999",
+      "battery": "5000 mAh",
+      "chip": "Dimensity 6300 (6 nm)",
+      "display": "6.6\" IPS LCD, 90 Hz",
+      "camera": "50 MP, f/1.8",
+      "storage": "6 GB / 256 GB"
+     },
+     "details": [
+      [
+       "Free space out of the box",
+       "228 GB"
+      ],
+      [
+       "Peak brightness (lab)",
+       "600 nits"
+      ],
+      [
+       "Screen-on time (lab)",
+       "12.4 hours"
+      ]
+     ],
+     "review": "Lots of room for downloads. The LCD screen is clear indoors but not as vivid as AMOLED.",
+     "_truth": {
+      "free_gb": 228,
+      "nits": 600,
+      "amoled": false,
+      "battery_h": 12.4,
+      "price": 21999
+     }
+    },
+    {
+     "id": "S3B",
+     "role": "trap_main",
+     "rank": 2,
+     "name": "Glide 6 Plus",
+     "colours": [
+      "Purple",
+      "Black"
+     ],
+     "specs": {
+      "price": "₹20,999",
+      "battery": "5000 mAh",
+      "chip": "Snapdragon 6s Gen 3 (6 nm)",
+      "display": "6.7\" AMOLED, 120 Hz",
+      "camera": "64 MP, f/1.8",
+      "storage": "8 GB + 8 GB virtual RAM (16 GB*) / 128 GB"
+     },
+     "details": [
+      [
+       "Free space out of the box",
+       "0.1 TB"
+      ],
+      [
+       "Peak brightness (lab)",
+       "1,400 nits"
+      ],
+      [
+       "Screen-on time (lab)",
+       "11 h 50 min"
+      ]
+     ],
+     "review": "A gorgeous AMOLED screen that is great for movies, and '16 GB RAM' for smooth multitasking.",
+     "_truth": {
+      "free_gb": 100,
+      "nits": 1400,
+      "amoled": true,
+      "battery_h": 11.83,
+      "price": 20999
+     }
+    },
+    {
+     "id": "S3C",
+     "role": "trap_second",
+     "rank": 3,
+     "name": "Spark 12",
+     "colours": [
+      "Blue",
+      "Silver"
+     ],
+     "specs": {
+      "price": "₹23,499",
+      "battery": "5000 mAh",
+      "chip": "Dimensity 7025 (6 nm)",
+      "display": "6.7\" AMOLED, 120 Hz",
+      "camera": "50 MP, OIS",
+      "storage": "8 GB / 256 GB"
+     },
+     "details": [
+      [
+       "Free space out of the box",
+       "0.23 TB"
+      ],
+      [
+       "Peak brightness (lab)",
+       "1,300 nits"
+      ],
+      [
+       "Screen-on time (lab)",
+       "760 minutes"
+      ]
+     ],
+     "review": "Big storage and a beautiful screen, in a slim body.",
+     "_truth": {
+      "free_gb": 230,
+      "nits": 1300,
+      "amoled": true,
+      "battery_h": 12.67,
+      "price": 23499
+     }
+    },
+    {
+     "id": "S3D",
+     "role": "dominated",
+     "rank": 4,
+     "name": "Mira 2",
+     "colours": [
+      "White",
+      "Black"
+     ],
+     "specs": {
+      "price": "₹21,999",
+      "battery": "5000 mAh",
+      "chip": "Unisoc T616 (12 nm)",
+      "display": "6.5\" LCD, 90 Hz",
+      "camera": "50 MP, f/2.0",
+      "storage": "6 GB / 128 GB"
+     },
+     "details": [
+      [
+       "Free space out of the box",
+       "98,000 MB"
+      ],
+      [
+       "Peak brightness (lab)",
+       "500 nits"
+      ],
+      [
+       "Screen-on time (lab)",
+       "10.6 hours"
+      ]
+     ],
+     "review": "Basic phone with a standard screen and storage.",
+     "_truth": {
+      "free_gb": 98,
+      "nits": 500,
+      "amoled": false,
+      "battery_h": 10.6,
+      "price": 21999
+     }
+    }
+   ]
+  },
+  "S4": {
+   "kind": "main",
+   "card": {
+    "persona": "Your friend plays long online games (2 hours or more) every evening.",
+    "text": "Budget: up to ₹28,000. Priority 1: games must stay smooth for the whole long session, not just at the start. Priority 2: battery life while gaming.",
+    "budget": 28000,
+    "priorities": [
+     "chip",
+     "battery"
+    ]
+   },
+   "phones": [
+    {
+     "id": "S4A",
+     "role": "correct",
+     "rank": 1,
+     "name": "Volt 7",
+     "colours": [
+      "Black",
+      "Orange"
+     ],
+     "specs": {
+      "price": "₹27,999",
+      "battery": "5000 mAh",
+      "chip": "Snapdragon 7+ Gen 3 (4 nm), vapour-chamber cooling",
+      "display": "6.7\" AMOLED, 144 Hz",
+      "camera": "50 MP, OIS",
+      "storage": "12 GB / 256 GB"
+     },
+     "details": [
+      [
+       "AnTuTu benchmark (first run)",
+       "1.32 million"
+      ],
+      [
+       "After 30 min of gaming",
+       "keeps 88% of its speed"
+      ],
+      [
+       "Gaming battery test",
+       "350 minutes"
+      ]
+     ],
+     "review": "Stays cool and steady in long matches. Battery while gaming is average.",
+     "_truth": {
+      "sustained": 1161600.0,
+      "peak": 1320000,
+      "gaming_battery_h": 5.83,
+      "price": 27999
+     }
+    },
+    {
+     "id": "S4B",
+     "role": "trap_main",
+     "rank": 2,
+     "name": "Titan GT",
+     "colours": [
+      "Red",
+      "Black"
+     ],
+     "specs": {
+      "price": "₹26,999",
+      "battery": "6000 mAh",
+      "chip": "Dimensity 8300 (4 nm), 'Gaming Mode'",
+      "display": "6.8\" AMOLED, 165 Hz",
+      "camera": "64 MP",
+      "storage": "16 GB / 256 GB"
+     },
+     "details": [
+      [
+       "AnTuTu benchmark (first run)",
+       "14,50,000"
+      ],
+      [
+       "After 30 min of gaming",
+       "drops to 0.61× of its speed"
+      ],
+      [
+       "Gaming battery test",
+       "6 h 40 min"
+      ]
+     ],
+     "review": "Very fast out of the box, with a 165 Hz screen, 16 GB RAM and a big 6000 mAh battery that lasts through long gaming.",
+     "_truth": {
+      "sustained": 884500.0,
+      "peak": 1450000,
+      "gaming_battery_h": 6.67,
+      "price": 26999
+     }
+    },
+    {
+     "id": "S4C",
+     "role": "trap_second",
+     "rank": 3,
+     "name": "Nova Ultra",
+     "colours": [
+      "Silver",
+      "Black"
+     ],
+     "specs": {
+      "price": "₹29,999",
+      "battery": "5500 mAh",
+      "chip": "Snapdragon 8s Gen 3 (4 nm)",
+      "display": "6.7\" AMOLED, 144 Hz",
+      "camera": "50 MP, OIS",
+      "storage": "12 GB / 512 GB"
+     },
+     "details": [
+      [
+       "AnTuTu benchmark (first run)",
+       "1.6 million"
+      ],
+      [
+       "After 30 min of gaming",
+       "keeps 80% of its speed"
+      ],
+      [
+       "Gaming battery test",
+       "6.1 hours"
+      ]
+     ],
+     "review": "Top speed and strong battery, at a higher price.",
+     "_truth": {
+      "sustained": 1280000.0,
+      "peak": 1600000,
+      "gaming_battery_h": 6.1,
+      "price": 29999
+     }
+    },
+    {
+     "id": "S4D",
+     "role": "dominated",
+     "rank": 4,
+     "name": "Pulse 5",
+     "colours": [
+      "Blue",
+      "Grey"
+     ],
+     "specs": {
+      "price": "₹27,999",
+      "battery": "5000 mAh",
+      "chip": "Dimensity 7050 (6 nm)",
+      "display": "6.6\" AMOLED, 120 Hz",
+      "camera": "64 MP",
+      "storage": "8 GB / 256 GB"
+     },
+     "details": [
+      [
+       "AnTuTu benchmark (first run)",
+       "6,80,000"
+      ],
+      [
+       "After 30 min of gaming",
+       "keeps 70% of its speed"
+      ],
+      [
+       "Gaming battery test",
+       "4.8 hours"
+      ]
+     ],
+     "review": "A decent all-rounder for casual games.",
+     "_truth": {
+      "sustained": 475999.99999999994,
+      "peak": 680000,
+      "gaming_battery_h": 4.8,
+      "price": 27999
+     }
+    }
+   ]
+  },
+  "S5": {
+   "kind": "pilot_ai",
+   "card": {
+    "persona": "Your grandparent forgets to charge their phone and keeps many family videos on it.",
+    "text": "Budget: up to ₹20,000. Priority 1: battery life. Priority 2: plenty of free storage.",
+    "budget": 20000,
+    "priorities": [
+     "battery",
+     "storage"
+    ]
+   },
+   "phones": [
+    {
+     "id": "S5A",
+     "role": "correct",
+     "rank": 1,
+     "name": "Dura M5",
+     "colours": [
+      "Black",
+      "Blue"
+     ],
+     "specs": {
+      "price": "₹19,499",
+      "battery": "5000 mAh",
+      "chip": "Snapdragon 4s Gen 2 (4 nm)",
+      "display": "6.7\" LCD, 90 Hz",
+      "camera": "50 MP",
+      "storage": "6 GB / 128 GB"
+     },
+     "details": [
+      [
+       "Screen-on time (lab)",
+       "15 h 10 min"
+      ],
+      [
+       "Free space out of the box",
+       "104 GB"
+      ]
+     ],
+     "review": "Very long battery life in our tests. Storage is enough for a normal photo collection.",
+     "_truth": {
+      "battery_h": 15.17,
+      "free_gb": 104,
+      "price": 19499
+     }
+    },
+    {
+     "id": "S5B",
+     "role": "trap_main",
+     "rank": 2,
+     "name": "Max 7",
+     "colours": [
+      "Green",
+      "Black"
+     ],
+     "specs": {
+      "price": "₹18,999",
+      "battery": "6000 mAh",
+      "chip": "Helio G85 (12 nm)",
+      "display": "6.7\" LCD, 90 Hz",
+      "camera": "50 MP",
+      "storage": "4 GB / 256 GB"
+     },
+     "details": [
+      [
+       "Screen-on time (lab)",
+       "870 minutes"
+      ],
+      [
+       "Free space out of the box",
+       "0.23 TB"
+      ]
+     ],
+     "review": "A large 6000 mAh battery and lots of storage for videos.",
+     "_truth": {
+      "battery_h": 14.5,
+      "free_gb": 230,
+      "price": 18999
+     }
+    },
+    {
+     "id": "S5C",
+     "role": "trap_second",
+     "rank": 3,
+     "name": "Flow 3",
+     "colours": [
+      "White",
+      "Gold"
+     ],
+     "specs": {
+      "price": "₹20,999",
+      "battery": "5500 mAh",
+      "chip": "Dimensity 6100+ (6 nm)",
+      "display": "6.6\" LCD, 90 Hz",
+      "camera": "50 MP",
+      "storage": "6 GB / 256 GB"
+     },
+     "details": [
+      [
+       "Screen-on time (lab)",
+       "16.1 hours"
+      ],
+      [
+       "Free space out of the box",
+       "230 GB"
+      ]
+     ],
+     "review": "Excellent battery and storage, slightly above this budget.",
+     "_truth": {
+      "battery_h": 16.1,
+      "free_gb": 230,
+      "price": 20999
+     }
+    },
+    {
+     "id": "S5D",
+     "role": "dominated",
+     "rank": 4,
+     "name": "Base 2",
+     "colours": [
+      "Grey",
+      "Blue"
+     ],
+     "specs": {
+      "price": "₹19,499",
+      "battery": "5000 mAh",
+      "chip": "Unisoc T606 (12 nm)",
+      "display": "6.5\" LCD, 60 Hz",
+      "camera": "13 MP",
+      "storage": "4 GB / 128 GB"
+     },
+     "details": [
+      [
+       "Screen-on time (lab)",
+       "11 h 50 min"
+      ],
+      [
+       "Free space out of the box",
+       "96,000 MB"
+      ]
+     ],
+     "review": "A basic phone for calls and messages.",
+     "_truth": {
+      "battery_h": 11.83,
+      "free_gb": 96,
+      "price": 19499
+     }
+    }
+   ]
   }
+ }
 }

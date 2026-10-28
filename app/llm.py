@@ -4,6 +4,7 @@ Answers are grounded ONLY in the phone data of the current set, and cached: the 
 (same set, same help type, same phones/spec) always gets the same text, so every participant in
 every condition sees identical help content (experimental control), and it is fast and cheap.
 """
+import hashlib
 import json
 import os
 import re
@@ -20,18 +21,18 @@ SYSTEM = (
     "Use ONLY the phone data provided below; never invent or guess specs, prices or test results. "
     "If something is not in the data, say you do not have that information. "
     "Explain trade-offs in plain, friendly English for a non-technical buyer, relating them to the buyer's stated needs. "
-    "Use the lab test results to explain what the headline numbers really mean. "
+    "Use the lab test results to explain what the headline numbers really mean; convert values given in different units (minutes and hours; GB, TB and MB; millions and Indian lakhs) to the same unit before comparing, and remember that lower lux and lower f-numbers are better. "
     "Do NOT tell the buyer which phone to buy and do not rank the phones; help them understand so they can decide. "
-    "Keep it under 110 words. Plain text only: no markdown, no headings, no bold. "
+    "Keep it under 110 words. Write numbers as digits with their units (for example 12 h 40 min, 2 lux, Rs 24,999). Plain text only: no markdown, no headings, no bold. "
     "Use 3 to 5 short lines, each starting with '- '."
 )
 
 GLOSSARY = {
-    "battery": "mAh is the battery's size, not how long it lasts. Real battery life also depends on how efficient the chip is (smaller nm is usually more efficient) and on the screen (high refresh rates and LCD panels can use more power). The lab battery test (hours of screen-on time) is the fairer comparison.",
-    "chip": "The processor (chip) decides speed and also power use. 'nm' is the manufacturing size: 4 nm chips are usually more efficient than 6 nm or 12 nm ones. Flagship chips (for example Snapdragon 8 series) are fastest for games. More RAM or a 'Gaming Mode' label does not make a slow chip fast.",
-    "display": "AMOLED screens show deeper blacks and richer colours than LCD. 'Hz' is how smooth scrolling looks (120 Hz is smoother than 90 Hz). 'Nits' is brightness: higher nits are easier to see outdoors. Bigger numbers on one line do not guarantee a better screen; the display lab score combines them.",
-    "camera": "Megapixels (MP) measure resolution, not quality. A larger sensor (for example 1/1.4\" is larger than 1/1.67\") lets in more light, and OIS (optical image stabilisation) keeps photos sharp in low light and video steady. A telephoto lens gives real zoom. The lab camera score is the fairer comparison.",
-    "storage": "Storage (the second number, for example 256 GB) is space for photos, videos and apps. RAM (the first number) helps apps stay open. 'Virtual RAM' borrows some storage to act as RAM; it does not add storage space. Usable storage is a bit less than the number shown because of the phone's own software.",
+    "battery": "mAh is the battery's size, not how long it lasts: an efficient chip (smaller nm) and screen matter as much. Compare the lab screen-on times, and convert them to the same unit first: 760 minutes is 12 h 40 min, and 13 h 50 min is 830 minutes.",
+    "chip": "The first AnTuTu run shows peak speed, but phones that get hot slow down in long games. 'Keeps 88% of its speed after 30 min' or 'drops to 0.61x' tells you the speed in a long session: multiply the first-run score by it. Indian number format: 14,50,000 is 1.45 million and 8,20,000 is 0.82 million. 'Gaming Mode' and more RAM do not make a phone faster.",
+    "display": "AMOLED screens have deeper blacks and richer colours than LCD. Hz is scrolling smoothness. Nits and cd/m2 are the same unit of brightness: higher is easier to see in sunlight, so 1,800 cd/m2 is brighter than 1,200 nits.",
+    "camera": "Megapixels (MP) are resolution, not quality. Sensor size: a SMALLER second number means a BIGGER sensor (1/1.4\" is bigger than 1/1.56\"). Aperture: a SMALLER f-number lets in MORE light (f/1.7 beats f/2.0). Low-light tests in lux: a LOWER number is better, because the phone still takes sharp photos in darker light (2 lux is darker than 4 lux). Optical zoom (a telephoto lens, e.g. 3x optical) stays sharp; 'digital zoom' (e.g. 100x) only crops and enlarges.",
+    "storage": "Free space out of the box is what you can actually use. Convert units first: 1 TB is about 1,000 GB, so 0.1 TB is about 100 GB and 0.23 TB about 230 GB; 98,000 MB is about 98 GB. RAM (the first number) does not add storage, and 'virtual RAM' only borrows storage.",
     "price": "Check the price against the budget on your card. A phone above the budget does not meet the buyer's needs even if it is good.",
 }
 
@@ -73,16 +74,22 @@ def build_prompt(set_id, mode, args):
     return f"{ctx}\n\nTask: {task}"
 
 
+def _version(set_id):
+    """Fingerprint of the phone data and the AI instructions: when either changes, old cached answers are not used."""
+    return hashlib.sha1((set_context(set_id) + SYSTEM + json.dumps(GLOSSARY, sort_keys=True)).encode("utf-8")).hexdigest()[:8]
+
+
 def cache_key(set_id, mode, args):
+    sid = f"{set_id}@{_version(set_id)}"
     if mode == "ask":
         q = re.sub(r"\s+", " ", (args.get("question") or "").strip().lower())
-        return f"{set_id}|ask|{q}"[:255]
+        return f"{sid}|ask|{q}"[:255]
     if mode == "compare":
         pair = sorted((args.get("pair") or [])[:2])
-        return f"{set_id}|compare|{','.join(pair)}"
+        return f"{sid}|compare|{','.join(pair)}"
     if mode == "explain":
-        return f"{set_id}|explain|{args.get('spec') or 'battery'}"
-    return f"{set_id}|general"
+        return f"{sid}|explain|{args.get('spec') or 'battery'}"
+    return f"{sid}|general"
 
 
 def _clean(text):
