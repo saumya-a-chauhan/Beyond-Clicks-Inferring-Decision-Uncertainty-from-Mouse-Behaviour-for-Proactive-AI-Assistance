@@ -1,6 +1,17 @@
 # Data dictionary
 
-The ZIP export (dashboard → Export & tools) contains these files. Times are milliseconds since the task started
+## Results sheet (dashboard → Data & Excel)
+
+The Excel download has a **Pilot** and a **Main** sheet with the same columns, one row per participant and shopping
+round, and an **About** sheet that explains every column (the list lives in `app/sheets.py`). Key columns:
+`source` (this laptop or the uploaded file), `site` (laptop name), `participant`, `round`, `condition`,
+`decision_time_s`, `correct`, `rank`, `switched`, pop-up counts, confidence, NASA-TLX, SAM, help ratings, trust, SUS,
+preference rank. A CSV upload needs the same column names plus a `study` column (`pilot` or `main`); rows are matched
+on `site` + `participant` + `task_key`, so the same row is never added twice.
+
+## Raw data ZIP
+
+The ZIP export (dashboard → Backups & tools) contains these files. Times are milliseconds since the task started
 unless stated otherwise.
 
 ## participants.csv

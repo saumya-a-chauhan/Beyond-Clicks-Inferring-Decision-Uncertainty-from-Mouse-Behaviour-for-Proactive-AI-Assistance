@@ -37,7 +37,7 @@ The tables are created automatically the first time the website starts.
    `SECRET_KEY` is generated automatically.
 4. Click **Apply**. The first build takes a few minutes. Your study URL is shown at the top, for example
    `https://beyond-clicks-study.onrender.com`.
-5. Open `<URL>/admin`, log in, and run **Export & tools → Check the AI providers**.
+5. Open `<URL>/admin`, log in, and run **Backups & tools → Check the AI providers**.
 
 Notes:
 

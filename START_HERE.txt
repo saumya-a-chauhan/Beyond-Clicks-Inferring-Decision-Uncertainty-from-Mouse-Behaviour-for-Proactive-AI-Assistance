@@ -1,0 +1,27 @@
+BEYOND CLICKS STUDY - START HERE
+================================
+
+1. Install Python 3.11 or newer from https://www.python.org/downloads/
+   (on the first installer screen tick "Add Python to PATH").
+
+2. Put this folder somewhere permanent (for example Documents\Beyond-Clicks).
+
+3. Check that a file called .env is in this folder. It holds the researcher
+   password and the AI keys. If it is missing: copy .env.example, rename the
+   copy to .env, and ask Saumya for the values.
+
+4. Start the website:
+     Windows: double-click start_study.bat
+     Mac:     double-click start_study.command (first time: right-click > Open)
+   The first start installs everything (3-5 minutes). Keep the black window
+   open while you work; closing it stops the website.
+
+5. The browser opens by itself. Addresses:
+     Participants:          http://localhost:8000
+     Researcher dashboard:  http://localhost:8000/admin
+                            (password = the ADMIN_PASSWORD line in .env)
+     Full experimenter guide (pilot, freeze, main study, data, backups):
+                            http://localhost:8000/guide
+
+All data is saved in hti_study.db in this folder, with automatic copies in the
+backups folder. Never delete those. Read the guide before the first session.

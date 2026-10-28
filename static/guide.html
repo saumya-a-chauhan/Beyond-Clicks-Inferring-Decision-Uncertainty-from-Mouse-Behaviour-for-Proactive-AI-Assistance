@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Experimenter Guide</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/style.css">
+  <style>
+    .guide { max-width: 860px; margin: 0 auto; padding: 24px 16px 64px; line-height: 1.6; }
+    .guide h1 { margin-bottom: 4px; }
+    .guide h2 { margin-top: 36px; padding-top: 12px; border-top: 1px solid var(--line); }
+    .guide h3 { margin-top: 20px; }
+    .guide ol li, .guide ul li { margin: 4px 0; }
+    .guide code, .guide kbd { background: #eef1fb; padding: 1px 6px; border-radius: 6px; font-size: .92em; }
+    .guide .toc { columns: 2; column-gap: 32px; }
+    .guide .toc a { display: block; padding: 2px 0; }
+    .guide table.data td, .guide table.data th { vertical-align: top; }
+    .guide .step { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 12px 16px; margin: 12px 0; }
+    @media (max-width: 640px) { .guide .toc { columns: 1; } }
+  </style>
+</head>
+<body>
+<div class="topbar">
+  <span class="brand">Experimenter guide</span>
+  <span class="spacer"></span>
+  <a href="/" class="small">Participant start page</a>
+  <a href="/admin" class="small">Researcher dashboard</a>
+</div>
+
+<div class="guide">
+  <h1>How to run the Beyond Clicks study</h1>
+  <p class="muted">For the person who runs the sessions. Read it once fully before the first pilot participant. Everything here works on one laptop, with no internet needed except for the AI help.</p>
+
+  <div class="notice"><b>The three phases, in order:</b> 1. Pilot study (8–12 people, no AI) → 2. Analyse the pilot and <b>freeze</b> the settings (you, in the dashboard, about 15 minutes) → 3. Main study (24 people). The Main study button stays locked until step 2 is done.</div>
+
+  <div class="panel toc">
+    <a href="#setup">1. One-time setup</a>
+    <a href="#before">2. Before every session</a>
+    <a href="#pilot">3. Running a pilot session</a>
+    <a href="#aicheck">4. The last 3 pilot people: AI check</a>
+    <a href="#freeze">5. When and how to freeze</a>
+    <a href="#main">6. Running a main session</a>
+    <a href="#after">7. After every session day</a>
+    <a href="#excel">8. Excel download and upload</a>
+    <a href="#safe">9. Is the data safe?</a>
+    <a href="#rules">10. Golden rules</a>
+    <a href="#trouble">11. Troubleshooting</a>
+  </div>
+
+  <h2 id="setup">1. One-time setup (on the study laptop)</h2>
+  <ol>
+    <li><b>Install Python 3.11 or newer</b> from <a href="https://www.python.org/downloads/" target="_blank">python.org</a>. On the first installer screen tick <b>"Add Python to PATH"</b>.</li>
+    <li><b>Unzip</b> the project folder somewhere permanent, for example <code>Documents\Beyond-Clicks</code>. Do not run it from inside the ZIP or from Downloads if you clean that folder.</li>
+    <li>Check that the folder has a file called <code>.env</code> (it holds the researcher password and the AI keys). If it is missing, copy <code>.env.example</code>, rename the copy to <code>.env</code>, and ask Saumya for the values.</li>
+    <li><b>Windows:</b> double-click <code>start_study.bat</code>. <b>Mac:</b> double-click <code>start_study.command</code> (if macOS blocks it: right-click → Open).<br>
+      The first time it installs everything, which takes 3–5 minutes. Then the browser opens on the study. <b>Keep the black window open</b> the whole time; closing it stops the website.</li>
+    <li>Open the <a href="/admin">researcher dashboard</a> and log in with the password from <code>.env</code> (the line <code>ADMIN_PASSWORD=</code>).</li>
+    <li><b>Settings tab:</b>
+      <ul>
+        <li><b>Laptop name:</b> type a name, e.g. <code>Riya-laptop</code>, and Save. It labels every row of the Excel sheets.</li>
+        <li><b>Consent page information:</b> team names, contact emails, supervisor, ethics approval number (or "pending"), reward. Save. Participants see this on the consent page.</li>
+      </ul></li>
+    <li><b>Backups &amp; tools tab → Check the AI providers → Run check.</b> Gemini and Groq should both show <code>"ok": true</code>. One working is enough.</li>
+    <li>Do one <b>practice run yourself</b>: on the start page click <b>Start pilot study</b> and click through to the first warm-up. Then in the dashboard <b>Participants</b> tab, <b>Delete</b> that test person so it does not count.</li>
+  </ol>
+
+  <h2 id="before">2. Before every session (2 minutes)</h2>
+  <div class="step">
+    <ol>
+      <li>Start the website (<code>start_study.bat</code>) if it is not running.</li>
+      <li>Plug in the <b>external mouse</b>. Never use the touchpad: it changes how the mouse moves and that person's data cannot be used.</li>
+      <li>Browser zoom at 100% (<kbd>Ctrl</kbd>+<kbd>0</kbd>), full screen (<kbd>F11</kbd>). The setup check needs a window at least 1200 px wide.</li>
+      <li>Phone on silent, quiet room, no one watching the screen.</li>
+      <li>Have the <b>reward</b> ready (the consent page says there is a bonus for each correct choice).</li>
+    </ol>
+  </div>
+
+  <h2 id="pilot">3. Running a pilot session (about 70 minutes)</h2>
+  <ol>
+    <li>On the start page (<code>http://localhost:8000</code>) click <b>Start pilot study</b>. The site gives the person a code (P01, P02, …).</li>
+    <li>Say: <i>"Everything is explained on the screen. Choose the phone you think is best for the person on the card, as if you were really buying it. I'll be nearby if something breaks, but I can't help with the choice."</i> Then step back.</li>
+    <li>The participant goes through, on their own:
+      <ol>
+        <li>consent and setup check</li>
+        <li>2 short warm-up tasks</li>
+        <li>4 shopping rounds with <b>no AI</b>, each followed by a "do you want to change your choice?" table and a confidence question</li>
+        <li>a <b>replay</b> of each round: they watch a dot that redraws their own mouse and <b>hold the SPACE bar</b> whenever they remember feeling unsure</li>
+        <li>3 short interview questions</li>
+      </ol></li>
+    <li>You may explain the SPACE-bar replay if asked. Do not comment on phones or specs.</li>
+    <li>If the browser closes by accident, open <code>http://localhost:8000</code> again on the same laptop and click <b>Continue P0x</b>. Nothing is lost.</li>
+    <li>Afterwards, in the dashboard <b>Participants</b> tab: the person should be <code>completed</code> with <b>4</b> in the Labels column. Give the reward.</li>
+  </ol>
+
+  <h2 id="aicheck">4. The last 3 pilot people: switch on the AI check</h2>
+  <p>The last 3 pilot participants get one extra round with the AI pop-up, to check that the AI answers make sense and arrive quickly.</p>
+  <ol>
+    <li>Before the 3rd-last pilot person (e.g. P08 if you plan 10): dashboard → <b>Settings → Pilot AI check</b> → tick <b>"Give new pilot participants the extra AI round"</b> → Save.</li>
+    <li>Run those 3 sessions as normal (about 10 minutes longer).</li>
+    <li>After the last one, <b>untick it again</b> and Save.</li>
+  </ol>
+
+  <h2 id="freeze">5. When and how to freeze</h2>
+  <h3>Freeze only when all of these are true</h3>
+  <ul>
+    <li>At least <b>8</b> pilot participants are <code>completed</code> (12 is better), each with 4 labels.</li>
+    <li>The 3 AI-check sessions are done and the AI answers looked correct.</li>
+    <li>You are sure no more pilot sessions will be run.</li>
+    <li>No simulated (test) people are in the data (<b>Backups &amp; tools → Delete simulated participants</b> if unsure).</li>
+  </ul>
+  <h3>How</h3>
+  <ol>
+    <li>Dashboard → <b>Pilot analysis &amp; freeze</b> → leave "Include simulated participants" <b>unticked</b> → <b>Run pilot analysis</b>.</li>
+    <li>The site replays every pilot round through the hesitation detector at thresholds from 1.0 to 3.0, compares the would-be pop-ups with the moments people marked as unsure, and <b>picks the threshold with the rule we wrote down in advance</b>: catch as many unsure moments as possible while being right at least 70% of the time with at most 1 false pop-up per round.</li>
+    <li>Check the results page:
+      <ul>
+        <li><b>Threshold picked by the rule</b> is shown. Good.</li>
+        <li><b>Phone sets:</b> each should be about 40–60% correct. If one is far outside (e.g. 100% or 0%), stop and tell Saumya before freezing: that phone set needs fixing.</li>
+        <li><b>Leave-one-out precision</b> should be clearly above the <b>chance</b> line.</li>
+      </ul></li>
+    <li><b>Take screenshots</b> of this page (needed for the midterm slides).</li>
+    <li>Click <b>Freeze settings and open the main study</b> and confirm.</li>
+    <li>The start page now shows the <b>Main study</b> button unlocked. A backup is saved automatically.</li>
+  </ol>
+  <div class="notice"><b>What freezing means:</b> the threshold and every detector number are locked with today's date, and every main-study participant gets exactly the same settings. You can run the pilot analysis as many times as you like <i>before</i> freezing. After freezing, changing anything needs "Unfreeze" with a written reason that stays in the log forever, so only do it for a serious problem and tell the team.</div>
+  <p><b>If no threshold passes the rule:</b> do not freeze. Tell Saumya; the protocol allows one documented change.</p>
+
+  <h2 id="main">6. Running a main session (about 75 minutes)</h2>
+  <ol>
+    <li>Start page → <b>Start main study</b>. The site gives the code (M01, M02, …) and <b>automatically picks the order</b> of the 4 versions (No AI, Ask AI, Smart pop-up, Random pop-up). The order is random for each person but balanced overall, so you do nothing.</li>
+    <li>Same short introduction as in the pilot, then step back.</li>
+    <li>The participant does: consent and setup check → 2 warm-ups → a practice round (shows an example pop-up and the Ask AI button) → 4 rounds, each with a short questionnaire → usability questions → ranking → 3 questions → <b>debrief</b>.</li>
+    <li><b>Never tell anyone before the debrief that one round has random pop-ups.</b> The debrief screen explains it and offers to delete their data.</li>
+    <li>Goal: <b>24 completed</b> participants. The design balances in groups of 4, so 24 is ideal. If someone stops early, just continue with the next person and note it.</li>
+  </ol>
+
+  <h2 id="after">7. After every session day</h2>
+  <ol>
+    <li>Dashboard → <b>Data &amp; Excel → Download Excel (Pilot + Main)</b>. Save it in the team's shared folder with the date in the name.</li>
+    <li>Dashboard → <b>Backups &amp; tools → Download full backup (.db)</b> and put it somewhere safe (a USB drive or the team drive). This file has <i>everything</i>, including the raw mouse data.</li>
+    <li>Close the black window to stop the website when you are done for the day.</li>
+  </ol>
+
+  <h2 id="excel">8. Excel download and upload</h2>
+  <ul>
+    <li><b>Download:</b> <i>Data &amp; Excel</i> tab. The Excel file has a <b>Pilot</b> sheet and a <b>Main</b> sheet (one row per participant and round) and an <b>About</b> sheet explaining each column. It is rebuilt from the data every time, so every new participant is added automatically. Single CSV files for Pilot or Main are there too.</li>
+    <li><b>Upload:</b> on any laptop running the project, upload an Excel file downloaded from another laptop. Its rows appear in the <i>View data</i> table (labelled with the file name) and in your own downloads, so one Excel can collect everything. Uploading the same file twice is safe (duplicates are skipped), and an upload can be removed again.</li>
+    <li>Uploaded rows are for viewing and combining sheets. The pilot analysis, the freeze and the main-study charts always use the data recorded on the laptop itself, because they need the raw mouse movement.</li>
+  </ul>
+
+  <h2 id="safe">9. Is the data safe?</h2>
+  <table class="data">
+    <tr><th>Situation</th><th>What happens to the data</th></tr>
+    <tr><td>Close the black window / restart the laptop / start again tomorrow</td><td><b>Kept.</b> Everything is saved instantly to <code>hti_study.db</code> in the project folder and is there when you start again.</td></tr>
+    <tr><td>Browser closes during a session</td><td><b>Kept.</b> Reopen the start page and click <b>Continue</b>.</td></tr>
+    <tr><td>Laptop crashes or a file gets damaged</td><td>A complete copy is saved automatically in the <code>backups</code> folder: when the site starts, every 15 minutes while data changes, after every participant, at freeze, and before any delete or upload (newest 40 kept). See "Restore a backup" below.</td></tr>
+    <tr><td>You zip the project folder and send it to someone</td><td>The data goes with it <b>only if</b> <code>hti_study.db</code> (and the <code>backups</code> folder) are inside the ZIP. <b>Stop the website first</b> (close the black window), then zip. The person who unzips it and starts it will see all the data in their dashboard.</td></tr>
+    <tr><td>You send the code-only ZIP Saumya made</td><td>No data inside: it starts empty. Use this for teammates who only need to look or test.</td></tr>
+    <tr><td>Someone deletes a participant by mistake</td><td>A backup was made just before the delete; restore it.</td></tr>
+  </table>
+  <h3>Restore a backup</h3>
+  <ol>
+    <li>Close the black window (stops the website).</li>
+    <li>In the project folder, rename <code>hti_study.db</code> to <code>hti_study_old.db</code>. If <code>hti_study.db-wal</code> and <code>hti_study.db-shm</code> exist, delete them.</li>
+    <li>Open the <code>backups</code> folder, pick the backup with the right date and time, copy it into the project folder and rename the copy to <code>hti_study.db</code>.</li>
+    <li>Start the website again. A downloaded full backup (.db) is restored the same way.</li>
+  </ol>
+
+  <h2 id="rules">10. Golden rules</h2>
+  <ol>
+    <li><b>One laptop for the whole study</b>, pilot and main. The freeze uses only the pilot data on that laptop, and every participant should use the same laptop and mouse.</li>
+    <li><b>Never delete</b> <code>hti_study.db</code> or the <code>backups</code> folder.</li>
+    <li><b>Never freeze</b> with simulated (test) data, and never run the test simulator on the real study folder.</li>
+    <li><b>Always the external mouse</b>, zoom 100%, full screen.</li>
+    <li><b>Do not tell</b> participants about the random pop-ups before the debrief.</li>
+    <li>Do not share the <code>.env</code> file publicly: it holds the password and the AI keys.</li>
+    <li>Exclude a participant (Participants → Exclude, with a reason) only for: touchpad used, did not finish the 4 rounds, a technical failure, or clearly not trying (chose within 5 seconds every round).</li>
+  </ol>
+
+  <h2 id="trouble">11. Troubleshooting</h2>
+  <table class="data">
+    <tr><th>Problem</th><th>What to do</th></tr>
+    <tr><td>The page does not open</td><td>The website is not running: double-click <code>start_study.bat</code> and keep its window open.</td></tr>
+    <tr><td>The black window closes straight away</td><td>Python is missing or not on PATH: reinstall Python and tick "Add Python to PATH". Or the <code>.env</code> file is missing (see setup step 3).</td></tr>
+    <tr><td>"Main study" is greyed out</td><td>The settings are not frozen yet (section 5).</td></tr>
+    <tr><td>Setup check says the window is too small</td><td>Press <kbd>F11</kbd> for full screen and <kbd>Ctrl</kbd>+<kbd>0</kbd> for 100% zoom, then reload.</td></tr>
+    <tr><td>AI answers say "not available right now"</td><td>Both AI services failed (no internet, or a key ran out). Written backup answers are shown, so the session can continue; note the participant code. Run <b>Backups &amp; tools → Check the AI providers</b> and tell Saumya.</td></tr>
+    <tr><td>"Session not found"</td><td>The browser data was cleared. Start a new session; delete or exclude the broken one.</td></tr>
+    <tr><td>Forgot the password</td><td>It is the <code>ADMIN_PASSWORD=</code> line in <code>.env</code> (open it with Notepad).</td></tr>
+  </table>
+</div>
+</body>
+</html>

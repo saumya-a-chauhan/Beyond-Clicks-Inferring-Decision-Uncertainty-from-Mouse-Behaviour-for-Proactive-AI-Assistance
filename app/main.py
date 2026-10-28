@@ -6,6 +6,8 @@ import random
 import secrets
 import tempfile
 import zipfile
+from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import BackgroundTasks, Depends, FastAPI, Header, HTTPException, Request, Response
 from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
@@ -13,15 +15,31 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from sqlalchemy import func, select
 
-from . import analysis, auth, config, db, live, llm, phones
+from . import analysis, auth, backup, config, db, live, llm, phones, sheets
 from .assign import next_assignment
 from .defaults import CONDITIONS, DETECTOR_DEFAULTS, STUDY_INFO_DEFAULTS
 from .detector import compute_ticks, popup_content
 from .features import Timeline, baseline_stats
 from .plans import main_plan, pilot_plan
 
-app = FastAPI(title="Beyond Clicks study")
 db.init_db()
+
+
+@asynccontextmanager
+async def lifespan(_app):
+    try:
+        backup.make_backup("start")        # a copy every time the site starts
+    except Exception:  # noqa: BLE001 - never block the study because of a backup
+        pass
+    backup.start_periodic()
+    yield
+    try:
+        backup.checkpoint()                # hti_study.db alone is complete once the site stops
+    except Exception:  # noqa: BLE001
+        pass
+
+
+app = FastAPI(title="Beyond Clicks study", lifespan=lifespan)
 _rng = random.SystemRandom()
 
 
@@ -84,6 +102,11 @@ def page_admin():
     return FileResponse(config.STATIC_DIR / "admin.html")
 
 
+@app.get("/guide")
+def page_guide():
+    return FileResponse(config.STATIC_DIR / "guide.html")
+
+
 @app.get("/healthz")
 def healthz():
     return {"ok": True}
@@ -93,7 +116,7 @@ def healthz():
 async def revalidate_static(request: Request, call_next):
     # browsers must re-check site files, so an updated version reaches every participant laptop
     response = await call_next(request)
-    if request.url.path.startswith("/static/") or request.url.path in ("/", "/run", "/admin"):
+    if request.url.path.startswith("/static/") or request.url.path in ("/", "/run", "/admin", "/guide"):
         response.headers["Cache-Control"] = "no-cache"
     return response
 
@@ -156,7 +179,7 @@ class StepBody(BaseModel):
 
 
 @app.post("/api/step")
-def api_step(body: StepBody):
+def api_step(body: StepBody, background: BackgroundTasks):
     with db.engine.begin() as conn:
         p = participant_by_token(conn, body.token)
         plan = db.loads(p["plan"], [])
@@ -175,6 +198,8 @@ def api_step(body: StepBody):
             upd["status"] = "completed"
         conn.execute(db.participants.update().where(db.participants.c.id == p["id"]).values(**upd))
         p.update(upd)
+    if upd.get("status") == "completed":
+        background.add_task(backup.make_backup, f"done_{p['code']}")
     return public_participant(p)
 
 
@@ -539,7 +564,10 @@ def admin_overview():
             "audit": [{"ts": str(a["ts"]), "action": a["action"], "detail": db.loads(a["detail"])} for a in audit_rows],
             "llm": {"gemini_key": bool(config.GEMINI_API_KEY), "groq_key": bool(config.GROQ_API_KEY),
                     "gemini_model": config.GEMINI_MODEL, "groq_model": config.GROQ_MODEL},
-            "database": "postgres" if config.DATABASE_URL.startswith("postgresql") else "sqlite"}
+            "database": "postgres" if config.DATABASE_URL.startswith("postgresql") else "sqlite",
+            "site_name": sheets.site_name(), "backups": backup.list_backups()[:5],
+            "backup_dir": str(backup.BACKUP_DIR) if backup.db_path() else None,
+            "db_file": str(backup.db_path()) if backup.db_path() else None}
 
 
 @app.get("/api/admin/participants", dependencies=[Depends(auth.require_admin)])
@@ -587,6 +615,7 @@ def admin_exclude(pid: int, body: ExcludeBody):
 
 @app.delete("/api/admin/participants/{pid}", dependencies=[Depends(auth.require_admin)])
 def admin_delete(pid: int):
+    backup.make_backup("before_delete")
     with db.engine.begin() as conn:
         row = conn.execute(select(db.participants.c.code).where(db.participants.c.id == pid)).first()
         _delete_participant(conn, pid)
@@ -596,6 +625,7 @@ def admin_delete(pid: int):
 
 @app.post("/api/admin/delete-simulated", dependencies=[Depends(auth.require_admin)])
 def admin_delete_sim():
+    backup.make_backup("before_delete")
     with db.engine.begin() as conn:
         ids = [r[0] for r in conn.execute(select(db.participants.c.id).where(db.participants.c.simulated.is_(True)))]
         for pid in ids:
@@ -608,6 +638,7 @@ class SettingsBody(BaseModel):
     study_info: dict | None = None
     detector: dict | None = None
     pilot_ai_check_next: bool | None = None
+    site_name: str | None = None
 
 
 @app.post("/api/admin/settings", dependencies=[Depends(auth.require_admin)])
@@ -616,6 +647,8 @@ def admin_settings(body: SettingsBody):
         db.set_setting("study_info", {k: str(v) for k, v in body.study_info.items() if k in STUDY_INFO_DEFAULTS})
     if body.pilot_ai_check_next is not None:
         db.set_setting("pilot_ai_check_next", bool(body.pilot_ai_check_next))
+    if body.site_name is not None:
+        db.set_setting("site_name", body.site_name.strip()[:64])
     if body.detector is not None:
         if frozen_state().get("frozen"):
             raise HTTPException(409, "Settings are frozen. Unfreeze (logged) before changing them.")
@@ -676,6 +709,7 @@ def admin_freeze(body: FreezeBody):
              "include_simulated": last.get("include_simulated"), "settings": analysis.detector_cfg()}
     db.set_setting("frozen", state)
     db.log_audit("freeze", state)
+    backup.make_backup("freeze")
     return state
 
 
@@ -762,3 +796,80 @@ def admin_export():
     tmp.seek(0)
     return StreamingResponse(tmp, media_type="application/zip",
                              headers={"Content-Disposition": "attachment; filename=hti_study_export.zip"})
+
+
+# ---------------------------------------------------------------- results sheets (Excel / CSV) and backups
+def _flag(v):
+    return str(v).lower() in ("1", "true", "yes", "on")
+
+
+@app.get("/api/admin/sheet", dependencies=[Depends(auth.require_admin)])
+def admin_sheet(study: str = "pilot", include_imported: str = "1", include_sim: str = "0"):
+    if study not in sheets.STUDIES:
+        raise HTTPException(400, "Unknown study")
+    rows = sheets.all_rows(study, _flag(include_imported), _flag(include_sim))
+    return {"columns": sheets.display_columns(), "rows": rows, "site": sheets.site_name(),
+            "meanings": dict(sheets.COLUMNS), "imports": [dict(b, uploaded_at=str(b["uploaded_at"])) for b in sheets.batches()]}
+
+
+@app.get("/api/admin/export.xlsx", dependencies=[Depends(auth.require_admin)])
+def admin_export_xlsx(include_imported: str = "1", include_sim: str = "0"):
+    data = sheets.to_xlsx(_flag(include_imported), _flag(include_sim))
+    name = f"beyond_clicks_results_{db.now():%Y%m%d_%H%M}.xlsx"
+    return Response(data, media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    headers={"Content-Disposition": f"attachment; filename={name}"})
+
+
+@app.get("/api/admin/export/{study}.csv", dependencies=[Depends(auth.require_admin)])
+def admin_export_csv(study: str, include_imported: str = "1", include_sim: str = "0"):
+    if study not in sheets.STUDIES:
+        raise HTTPException(404, "Unknown study")
+    data = sheets.to_csv(study, _flag(include_imported), _flag(include_sim))
+    return Response(data, media_type="text/csv; charset=utf-8",
+                    headers={"Content-Disposition": f"attachment; filename=beyond_clicks_{study}_{db.now():%Y%m%d_%H%M}.csv"})
+
+
+@app.post("/api/admin/import", dependencies=[Depends(auth.require_admin)])
+async def admin_import(request: Request, filename: str = "upload.xlsx"):
+    content = await request.body()
+    if not content:
+        raise HTTPException(400, "The file is empty.")
+    backup.make_backup("before_import")
+    try:
+        return sheets.import_file(Path(filename).name, content)
+    except ValueError as e:
+        raise HTTPException(400, str(e)) from e
+
+
+@app.delete("/api/admin/imports/{bid}", dependencies=[Depends(auth.require_admin)])
+def admin_delete_import(bid: int):
+    backup.make_backup("before_delete")
+    return {"ok": True, "deleted": sheets.delete_batch(bid)}
+
+
+@app.get("/api/admin/backups", dependencies=[Depends(auth.require_admin)])
+def admin_backups():
+    return {"backups": backup.list_backups(), "folder": str(backup.BACKUP_DIR) if backup.db_path() else None}
+
+
+@app.post("/api/admin/backups", dependencies=[Depends(auth.require_admin)])
+def admin_backup_now():
+    f = backup.make_backup("manual")
+    if f is None:
+        raise HTTPException(400, "Backups are only for the local database.")
+    return {"ok": True, "name": f.name}
+
+
+@app.get("/api/admin/backup.db", dependencies=[Depends(auth.require_admin)])
+def admin_backup_download():
+    if backup.db_path() is None:
+        raise HTTPException(400, "Backups are only for the local database.")
+    tmp_dir = Path(tempfile.mkdtemp())
+    tmp = tmp_dir / "hti_study.db"
+    backup.fresh_copy(tmp)
+    data = tmp.read_bytes()
+    tmp.unlink(missing_ok=True)
+    tmp_dir.rmdir()
+    name = f"hti_study_full_backup_{db.now():%Y%m%d_%H%M}.db"
+    return Response(data, media_type="application/octet-stream",
+                    headers={"Content-Disposition": f"attachment; filename={name}"})

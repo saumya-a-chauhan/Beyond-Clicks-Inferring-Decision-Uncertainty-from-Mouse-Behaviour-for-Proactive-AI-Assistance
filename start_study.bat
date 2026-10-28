@@ -22,6 +22,7 @@ if not exist ".venv\Scripts\python.exe" (
 echo.
 echo  Study website:        http://localhost:8000
 echo  Researcher dashboard: http://localhost:8000/admin   (password: ADMIN_PASSWORD in .env)
+echo  Experimenter guide:   http://localhost:8000/guide
 echo.
 echo  Keep this window open. Close it to stop the website.
 echo.

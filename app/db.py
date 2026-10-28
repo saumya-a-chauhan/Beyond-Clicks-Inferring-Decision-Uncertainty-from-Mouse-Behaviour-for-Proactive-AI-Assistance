@@ -20,7 +20,11 @@ if config.DATABASE_URL.startswith("sqlite"):
     @event.listens_for(engine, "connect")
     def _sqlite_pragmas(dbapi_conn, _):
         cur = dbapi_conn.cursor()
-        cur.execute("PRAGMA journal_mode=WAL")
+        # Rollback-journal mode: every committed save is written into hti_study.db itself, so the single file is
+        # always complete, even if the window is closed abruptly or someone copies only that file.
+        cur.execute("PRAGMA busy_timeout=10000")
+        cur.execute("PRAGMA journal_mode=DELETE")
+        cur.execute("PRAGMA synchronous=FULL")
         cur.execute("PRAGMA foreign_keys=ON")
         cur.close()
 
@@ -160,6 +164,28 @@ audit = Table(
     Column("ts", DateTime(timezone=True)),
     Column("action", String(32)),
     Column("detail", Text),
+)
+
+
+import_batches = Table(
+    "import_batches", md,
+    Column("id", Integer, primary_key=True),
+    Column("filename", String(255)),
+    Column("uploaded_at", DateTime(timezone=True)),
+    Column("rows_added", Integer),
+    Column("rows_skipped", Integer),
+)
+
+imported_rows = Table(                     # rows from an uploaded Excel/CSV (same columns as the download)
+    "imported_rows", md,
+    Column("id", Integer, primary_key=True),
+    Column("batch_id", Integer, ForeignKey("import_batches.id", ondelete="CASCADE"), index=True),
+    Column("study", String(8)),            # pilot | main
+    Column("site", String(64)),            # which laptop collected it
+    Column("participant", String(32)),
+    Column("task_key", String(16)),
+    Column("data", Text),                  # JSON {column: value}
+    UniqueConstraint("study", "site", "participant", "task_key", name="uq_imported_row"),
 )
 
 

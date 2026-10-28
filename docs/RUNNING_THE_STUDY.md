@@ -1,6 +1,6 @@
 # Running the study: step-by-step guide for the team
 
-This guide is for whoever runs a session. Read it fully once before the first pilot.
+This is the detailed protocol. The step-by-step guide for whoever runs sessions is inside the site at http://localhost:8000/guide (file `static/guide.html`). Read that one first.
 
 ## 0. One-time setup (before any participant)
 
@@ -9,8 +9,8 @@ This guide is for whoever runs a session. Read it fully once before the first pi
 2. Log in at http://localhost:8000/admin.
 3. **Settings tab → Consent page information:** fill in team names, contact emails, supervisor, the ethics approval
    number (or "pending"), and the reward. Save. This text appears on every participant's consent page.
-4. **Export & tools → Check the AI providers:** both Gemini and Groq should say `ok: true`.
-5. Make sure no simulated participants are left (**Export & tools → Delete simulated participants**).
+4. **Backups & tools → Check the AI providers:** both Gemini and Groq should say `ok: true`.
+5. Make sure no simulated participants are left (**Backups & tools → Delete simulated participants**).
 6. Bring an **external mouse**. Every session should use a mouse, browser zoom at 100%, and a full-screen window
    (F11). The device check screen asks participants to confirm this.
 
@@ -95,7 +95,7 @@ Unfreezing exists only for serious problems. It needs a written reason, and that
    - speed, rank, correctness
    - questionnaires
    - the order check
-2. **Export & tools → Download ZIP** for an archive of everything.
+2. **Backups & tools → Download ZIP** for an archive of everything.
 3. On the study laptop, run `.venv\Scripts\python analysis\make_figures.py --study main` (plots 8–22 and the
    mixed-model statistics). Figures are saved in `analysis/figures/`.
 4. If someone asks for their data to be deleted later: in **Participants**, delete that participant by code.

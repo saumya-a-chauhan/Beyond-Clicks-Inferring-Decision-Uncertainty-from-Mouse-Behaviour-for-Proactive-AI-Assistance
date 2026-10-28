@@ -54,6 +54,11 @@ explained: [docs/DETECTOR.md](docs/DETECTOR.md) and [docs/VALUES.md](docs/VALUES
 - Replay labelling built from the logged data (no screen recording needed).
 - Researcher dashboard: participants, pilot threshold sweep with charts, leave-one-out, freeze/unfreeze (audited),
   main results (yes-rates, AUC at random moments, speed, quality, questionnaires), ZIP export.
+- **Data & Excel tab:** download an Excel file with a **Pilot** and a **Main** sheet (one row per participant and round,
+  always up to date) or single CSVs; upload a sheet from another laptop to view and combine it (duplicates skipped).
+- **Data safety:** every save goes straight into `hti_study.db`; automatic backups in `backups/` (at start, every 15
+  minutes while data changes, after each participant, at freeze, before deletes and uploads); full backup download.
+- **Experimenter guide** inside the site at `/guide`: setup, pilot, freeze, main study, data, troubleshooting.
 - Offline analysis script with 22 figures and mixed-effects models; simulator for testing; unit tests.
 
 ## Quick start (on the study laptop)
@@ -79,19 +84,21 @@ Then open:
 - http://localhost:8000/admin for researchers (password = `ADMIN_PASSWORD` in `.env`)
 
 All data is saved in `hti_study.db` in this folder. Back it up (copy the file) after every session day, and
-download a ZIP from the dashboard (**Export & tools**) for analysis.
+download a ZIP from the dashboard (**Backups & tools**) for analysis.
 
-## Sharing the project with teammates
+## Where the data is, and sharing it
 
-Do **not** zip the whole folder: `.venv` is about 500 MB and only works on this PC, `hti_study.db` holds participant
-data, and `.env` holds the password and API keys. Make a clean code-only ZIP instead:
+- All data is in **one file, `hti_study.db`**, in the project folder. Every save is written into it immediately, so it
+  survives closing the window, a crash or a restart, and a copy of that one file contains everything.
+- Automatic complete copies go to the **`backups/`** folder (newest 40 kept). Restoring one is described in the guide.
+- **Zipping the folder:** the data travels only if `hti_study.db` is inside the ZIP. Never include `.venv` (about
+  500 MB, works only on the PC that made it; the start script recreates it).
+- **Sharing results:** dashboard → **Data & Excel** → Download Excel. Another laptop can upload that file to see and
+  combine the rows. The pilot analysis and freeze always use the raw data on the laptop itself, so run the **whole study
+  on one laptop**.
 
-```powershell
-git archive -o Beyond-Clicks-code.zip HEAD
-```
-
-Teammates unzip it, copy `.env.example` to `.env`, fill in their own values, and run `start_study.bat`. To share the
-**data**, send the ZIP from the dashboard's **Export & tools** tab (participant codes only, no names).
+To make a clean code-only ZIP without data or secrets: `git archive -o Beyond-Clicks-code.zip HEAD` (teammates then
+copy `.env.example` to `.env` and fill it in).
 
 A cloud version (Render + Neon) is possible later; see [docs/DEPLOY.md](docs/DEPLOY.md). It is not needed for a
 single study laptop.
@@ -127,8 +134,12 @@ app/
   plans.py        the screens each participant goes through
   phones.py       phone sets and scoring of choices
   db.py           database tables (SQLite locally, Postgres in the cloud)
+  sheets.py       results sheets: Excel/CSV download and upload
+  backup.py       automatic and manual database backups
   data/phone_sets.json   the 6 phone sets (practice, 4 main, 1 pilot-AI)
-static/           website (home, participant runner, researcher dashboard)
+static/           website (home, participant runner, researcher dashboard, guide.html)
+START_HERE.txt    first steps for a new laptop
+start_study.bat / start_study.command   one-click start (Windows / Mac)
 analysis/make_figures.py   report figures + statistics
 scripts/simulate.py        fake participants for testing
 tests/            unit tests

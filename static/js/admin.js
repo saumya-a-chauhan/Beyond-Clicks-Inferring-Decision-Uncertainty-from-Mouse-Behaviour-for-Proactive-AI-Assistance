@@ -52,7 +52,7 @@ const TABS = {
         ${fz.frozen
           ? `<div class="notice good"><b>Settings frozen</b> on ${esc(fz.frozen_at)} with threshold <b>${fz.threshold}</b>. The main study is open.${fz.include_simulated ? " <b>Warning: the analysis behind this freeze included simulated data.</b>" : ""}</div>`
           : `<div class="notice">Settings are <b>not frozen</b>. The main study is locked. Finish the pilot, then use <b>Pilot analysis &amp; freeze</b>.</div>`}
-        <p class="small muted" style="margin-top:12px">Database: ${esc(o.database)} · Gemini key: ${o.llm.gemini_key ? "set" : "missing"} (${esc(o.llm.gemini_model)}) · Groq key: ${o.llm.groq_key ? "set" : "missing"} (${esc(o.llm.groq_model)}) · Next pilot participant gets AI check: <b>${o.pilot_ai_check_next ? "yes" : "no"}</b></p>
+        <p class="small muted" style="margin-top:12px">Laptop: <b>${esc(o.site_name)}</b> · Data file: <code>${esc(o.db_file || o.database)}</code> · Latest backup: ${o.backups && o.backups.length ? esc(o.backups[0].time.replace("T", " ")) : "none yet"}<br>Database: ${esc(o.database)} · Gemini key: ${o.llm.gemini_key ? "set" : "missing"} (${esc(o.llm.gemini_model)}) · Groq key: ${o.llm.groq_key ? "set" : "missing"} (${esc(o.llm.groq_model)}) · Next pilot participant gets AI check: <b>${o.pilot_ai_check_next ? "yes" : "no"}</b></p>
       </div>
       <div class="panel"><h3>Audit log (latest 50)</h3>
         ${table([["Time", a => esc(a.ts.slice(0, 19))], ["Action", a => esc(a.action)], ["Detail", a => `<code class="small">${esc(JSON.stringify(a.detail).slice(0, 220))}</code>`]], o.audit)}
@@ -124,6 +124,112 @@ const TABS = {
     };
   },
 
+  async data() {
+    clearCharts();
+    view.innerHTML = `
+      <div class="panel"><h2>Download results sheet</h2>
+        <p>One row per participant and shopping round. The Excel file has a <b>Pilot</b> sheet and a <b>Main</b> sheet with the same columns, plus an <b>About</b> sheet explaining every column.
+        It is built fresh from the data each time, so new participants are always included.</p>
+        <label class="check"><input type="checkbox" id="dl-imp" checked> Include uploaded data from other laptops</label>
+        <label class="check"><input type="checkbox" id="dl-sim"> Include simulated (test) participants</label>
+        <div class="actions" style="justify-content:flex-start;flex-wrap:wrap">
+          <a class="btn primary" id="dl-xlsx" href="#">Download Excel (Pilot + Main)</a>
+          <a class="btn" id="dl-pcsv" href="#">Pilot CSV</a>
+          <a class="btn" id="dl-mcsv" href="#">Main CSV</a></div></div>
+      <div class="panel"><h2>Upload a sheet from another laptop</h2>
+        <p>Upload an Excel file downloaded from another laptop's dashboard (or a CSV with the same columns and a <b>study</b> column). Its rows are shown below and included in your downloads.
+        Rows already here are skipped, so uploading the same file twice is safe. This laptop's own rows are always read live, never from an upload.</p>
+        <p class="small muted">Uploaded rows are summaries (one row per round). They appear in this tab and in downloads, but the pilot threshold analysis and the main-study charts use only data recorded on this laptop, because those need the raw mouse movement.</p>
+        <input type="file" id="up-file" accept=".xlsx,.csv">
+        <div class="actions" style="justify-content:flex-start"><button class="primary" id="up-go">Upload</button></div>
+        <div id="up-out"></div><div id="up-list"></div></div>
+      <div class="panel"><h2>View data</h2>
+        <div class="actions" style="justify-content:flex-start;flex-wrap:wrap;gap:8px">
+          <button id="v-pilot" class="primary">Pilot</button><button id="v-main">Main</button>
+          <select id="v-src" style="max-width:280px"><option value="">All sources</option></select>
+          <label class="check" style="margin:0"><input type="checkbox" id="v-all"> Show all columns</label></div>
+        <div id="v-sum"></div><div id="v-table"></div></div>`;
+    const q = () => `include_imported=${view.querySelector("#dl-imp").checked ? 1 : 0}&include_sim=${view.querySelector("#dl-sim").checked ? 1 : 0}`;
+    const setLinks = () => {
+      view.querySelector("#dl-xlsx").href = `/api/admin/export.xlsx?${q()}`;
+      view.querySelector("#dl-pcsv").href = `/api/admin/export/pilot.csv?${q()}`;
+      view.querySelector("#dl-mcsv").href = `/api/admin/export/main.csv?${q()}`;
+    };
+    setLinks();
+    let study = "pilot", sheet = null;
+    const KEY = ["source", "site", "participant", "status", "round", "condition_name", "phone_set", "decision_time_s", "correct", "rank", "switched", "popups_shown", "unsure_yes", "confidence"];
+    const cell = v => v === true ? "✓" : v === false ? "✗" : v == null ? "" : esc(v);
+    const med = a => {
+      const s = a.filter(x => x != null).sort((x, y) => x - y);
+      if (!s.length) return null;
+      return s.length % 2 ? s[(s.length - 1) / 2] : (s[s.length / 2 - 1] + s[s.length / 2]) / 2;
+    };
+    const render = () => {
+      const src = view.querySelector("#v-src").value;
+      const rows = sheet.rows.filter(r => !src || r.source === src);
+      const cols = view.querySelector("#v-all").checked ? sheet.columns : KEY;
+      const people = new Set(rows.map(r => `${r.site}|${r.participant}`)).size;
+      const byC = {};
+      rows.forEach(r => { const c = r.condition_name || r.condition; (byC[c] = byC[c] || []).push(r); });
+      view.querySelector("#v-sum").innerHTML = `<p><b>${rows.length}</b> rows from <b>${people}</b> participants.</p>` + (rows.length ? table([
+        ["Condition", c => esc(c)], ["Rounds", c => byC[c].length],
+        ["% correct (first choice)", c => { const v = byC[c].filter(r => r.correct != null); return v.length ? `${Math.round(100 * v.filter(r => r.correct).length / v.length)}%` : "–"; }],
+        ["Median time (s)", c => num(med(byC[c].map(r => r.decision_time_s)), 1)],
+        ["Pop-ups", c => byC[c].reduce((a, r) => a + (r.popups_shown || 0), 0)],
+        ["'Unsure' yes", c => byC[c].reduce((a, r) => a + (r.unsure_yes || 0), 0)]], Object.keys(byC).sort()) : "");
+      view.querySelector("#v-table").innerHTML = rows.length
+        ? `<div style="overflow:auto;max-height:520px"><table class="data"><tr>${cols.map(c => `<th title="${esc(sheet.meanings[c] || "")}">${esc(c)}</th>`).join("")}</tr>
+           ${rows.map(r => `<tr>${cols.map(c => `<td>${cell(r[c])}</td>`).join("")}</tr>`).join("")}</table></div>`
+        : '<p class="muted">No rows yet.</p>';
+    };
+    const listImports = imps => {
+      view.querySelector("#up-list").innerHTML = imps.length ? "<h3 style='margin-top:16px'>Uploaded files</h3>" + table([
+        ["File", b => esc(b.filename)], ["Uploaded", b => esc(String(b.uploaded_at).slice(0, 16))], ["Rows added", b => b.rows_added],
+        ["", b => `<button class="small danger" data-delimp="${b.id}">Remove</button>`]], imps) : "";
+      view.querySelectorAll("[data-delimp]").forEach(b => b.onclick = async () => {
+        if (!confirm("Remove the rows that came from this upload? (A backup is made first.)")) return;
+        await API.del(`/api/admin/imports/${b.dataset.delimp}`);
+        load();
+      });
+    };
+    const load = async () => {
+      sheet = await API.get(`/api/admin/sheet?study=${study}&${q()}`);
+      const sel = view.querySelector("#v-src"), keep = sel.value;
+      const srcs = [...new Set(sheet.rows.map(r => r.source))];
+      sel.innerHTML = `<option value="">All sources</option>` + srcs.map(x => `<option ${x === keep ? "selected" : ""}>${esc(x)}</option>`).join("");
+      view.querySelector("#v-pilot").classList.toggle("primary", study === "pilot");
+      view.querySelector("#v-main").classList.toggle("primary", study === "main");
+      listImports(sheet.imports);
+      render();
+    };
+    view.querySelector("#dl-imp").onchange = () => { setLinks(); load(); };
+    view.querySelector("#dl-sim").onchange = () => { setLinks(); load(); };
+    view.querySelector("#v-pilot").onclick = () => { study = "pilot"; load(); };
+    view.querySelector("#v-main").onclick = () => { study = "main"; load(); };
+    view.querySelector("#v-src").onchange = render;
+    view.querySelector("#v-all").onchange = render;
+    view.querySelector("#up-go").onclick = async () => {
+      const f = view.querySelector("#up-file").files[0];
+      const out = view.querySelector("#up-out");
+      if (!f) { out.innerHTML = '<p class="notice">Choose a file first.</p>'; return; }
+      out.innerHTML = '<p class="muted">Uploading…</p>';
+      try {
+        const r = await fetch(`/api/admin/import?filename=${encodeURIComponent(f.name)}`, { method: "POST", body: f, credentials: "same-origin" });
+        const d = await r.json();
+        if (!r.ok) throw new Error(d.detail || "Upload failed");
+        const per = Object.entries(d.per_study).map(([k, v]) => `${k}: ${v}`).join(", ") || "none";
+        out.innerHTML = `<div class="notice good"><b>${d.added}</b> rows added (${per}).
+          Skipped: ${d.skipped_duplicates} already here, ${d.skipped_own_laptop} from this laptop, ${d.skipped_empty} empty.
+          ${d.missing_columns.length ? `<br>Columns missing in the file (left blank): ${esc(d.missing_columns.join(", "))}` : ""}
+          ${d.ignored_columns.length ? `<br>Unknown columns ignored: ${esc(d.ignored_columns.join(", "))}` : ""}</div>`;
+        view.querySelector("#up-file").value = "";
+        load();
+      } catch (e) { out.innerHTML = `<div class="notice bad">${esc(e.message)}</div>`; }
+    };
+    load();
+  },
+
+
   async settings() {
     clearCharts();
     const o = await API.get("/api/admin/overview");
@@ -132,6 +238,10 @@ const TABS = {
       ["irb", "Ethics approval (number or 'pending')"], ["reward", "Reward text"], ["duration_pilot", "Pilot duration"], ["duration_main", "Main duration"]];
     const frozen = o.frozen && o.frozen.frozen;
     view.innerHTML = `
+      <div class="panel"><h2>Laptop name</h2>
+        <p class="small muted">Written in the <b>site</b> column of every downloaded sheet, so data from different laptops can be combined without mixing up participants (two laptops both have a P01). Give each laptop a different name before its first participant, e.g. "Riya-laptop".</p>
+        <label>Name of this laptop</label><input type="text" id="site" value="${esc(o.site_name || "")}">
+        <div class="actions"><button class="primary" id="savesite">Save</button></div></div>
       <div class="panel"><h2>Consent page information</h2>
         ${fields.map(([k, l]) => `<label>${l}</label><input type="text" data-si="${k}" value="${esc(si[k] || "")}">`).join("")}
         <div class="actions"><button class="primary" id="savesi">Save</button></div></div>
@@ -147,6 +257,7 @@ const TABS = {
       const d = {}; view.querySelectorAll("[data-si]").forEach(i => d[i.dataset.si] = i.value);
       await API.post("/api/admin/settings", { study_info: d }); alert("Saved");
     };
+    view.querySelector("#savesite").onclick = async () => { await API.post("/api/admin/settings", { site_name: view.querySelector("#site").value }); alert("Saved"); };
     view.querySelector("#saveaic").onclick = async () => { await API.post("/api/admin/settings", { pilot_ai_check_next: view.querySelector("#aic").checked }); alert("Saved"); };
     view.querySelector("#savedet").onclick = async () => {
       let d; try { d = JSON.parse(view.querySelector("#det").value); } catch (e) { alert("Not valid JSON"); return; }
@@ -157,7 +268,13 @@ const TABS = {
   async tools() {
     clearCharts();
     view.innerHTML = `
-      <div class="panel"><h2>Download all data</h2>
+      <div class="panel"><h2>Backups</h2>
+        <p>All data lives in one file, <code>hti_study.db</code>. A complete copy is saved automatically in the <code>backups</code> folder next to it:
+        when the site starts, every 15 minutes while data changes, after every participant finishes, at freeze, and before any delete or upload. The newest 40 are kept.</p>
+        <div class="actions" style="justify-content:flex-start"><button id="bknow">Make a backup now</button>
+          <a class="btn primary" href="/api/admin/backup.db">Download full backup (.db)</a></div>
+        <p class="small muted" id="bkfolder"></p><div id="bklist"></div></div>
+      <div class="panel"><h2>Download all raw data</h2>
         <p>A ZIP with CSV files: participants, tasks, responses, pop-ups, AI requests, replay labels, raw cursor events per task, detector ticks per task, settings and the audit log. Column meanings: docs/DATA_DICTIONARY.md.</p>
         <a class="btn primary" href="/api/admin/export.zip">Download ZIP</a></div>
       <div class="panel"><h2>Check the AI providers</h2>
@@ -166,6 +283,15 @@ const TABS = {
       <div class="panel"><h2>Simulated data</h2>
         <p>Delete every participant created by <code>scripts/simulate.py</code>.</p>
         <button class="danger" id="delsim">Delete simulated participants</button></div>`;
+    const loadBk = async () => {
+      const b = await API.get("/api/admin/backups");
+      view.querySelector("#bkfolder").textContent = b.folder ? `Folder: ${b.folder}` : "";
+      view.querySelector("#bklist").innerHTML = b.backups.length
+        ? table([["Backup", x => `<code class="small">${esc(x.name)}</code>`], ["Time", x => esc(x.time.replace("T", " "))], ["Size", x => `${x.size_kb} KB`]], b.backups.slice(0, 10))
+        : '<p class="muted">No backups yet.</p>';
+    };
+    loadBk();
+    view.querySelector("#bknow").onclick = async () => { try { await API.post("/api/admin/backups"); loadBk(); } catch (e) { alert(e.message); } };
     view.querySelector("#llm").onclick = async () => {
       view.querySelector("#llmout").textContent = "Checking…";
       view.querySelector("#llmout").textContent = JSON.stringify(await API.post("/api/admin/llm-test"), null, 2);

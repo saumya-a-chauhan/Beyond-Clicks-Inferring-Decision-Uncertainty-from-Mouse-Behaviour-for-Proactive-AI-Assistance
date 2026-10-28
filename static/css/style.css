@@ -210,3 +210,4 @@ pre.json { background: #0f172a; color: #e2e8f0; padding: 14px; border-radius: 10
   .choices, .grid2 { grid-template-columns: 1fr; }
 }
 .chart-cell { position: relative; min-width: 0; }
+.notice.bad { background: #fdecec; border-color: #f3c2c2; color: #7f1d1d; }
