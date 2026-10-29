@@ -16,6 +16,14 @@ if [ ! -x ".venv/bin/python" ]; then
   .venv/bin/pip install -r requirements-analysis.txt || { echo "[!] Package install failed."; read -r -p "Press Enter to close."; exit 1; }
 fi
 
+if lsof -nP -iTCP:8000 -sTCP:LISTEN >/dev/null 2>&1; then
+  echo "[!] The study website is ALREADY RUNNING in another window (maybe an older copy)."
+  echo "    Close that other Terminal window first, then open start_study.command again."
+  echo "    If you cannot find it: restart the Mac, then open start_study.command."
+  read -r -p "Press Enter to close."
+  exit 1
+fi
+
 echo
 echo " Study website:        http://localhost:8000"
 echo " Researcher dashboard: http://localhost:8000/admin   (password: ADMIN_PASSWORD in .env)"

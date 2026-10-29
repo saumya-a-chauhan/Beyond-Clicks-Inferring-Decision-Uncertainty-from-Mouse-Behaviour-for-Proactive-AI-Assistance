@@ -19,6 +19,15 @@ if not exist ".venv\Scripts\python.exe" (
   ".venv\Scripts\pip.exe" install -r requirements-analysis.txt || (echo [!] Package install failed. & pause & exit /b 1)
 )
 
+netstat -ano | findstr /r /c:":8000 .*LISTENING" >nul
+if not errorlevel 1 (
+  echo [!] The study website is ALREADY RUNNING in another window ^(maybe an older copy^).
+  echo     Close that other black window first, then double-click start_study.bat again.
+  echo     If you cannot find it: restart the laptop, then double-click start_study.bat.
+  pause
+  exit /b 1
+)
+
 echo.
 echo  Study website:        http://localhost:8000
 echo  Researcher dashboard: http://localhost:8000/admin   (password: ADMIN_PASSWORD in .env)
