@@ -35,6 +35,8 @@ def test_round_trip_and_refusals(monkeypatch):
     data = datacsv.export_csv("laptop-A")
     before = _counts()
     assert b'"token"' not in data
+    assert b"\nmouse,1/0,,,,PX1,pilot,t1,1,0,move,1,2,,c1,\n" in data       # readable mouse rows, one per event
+    assert data.count(b"\nmouse,") == 50
 
     with pytest.raises(ValueError):
         datacsv.load_csv(b"a,b\n1,2\n", "wrong.csv")

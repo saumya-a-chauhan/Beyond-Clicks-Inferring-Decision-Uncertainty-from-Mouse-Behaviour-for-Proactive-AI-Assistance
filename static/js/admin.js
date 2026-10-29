@@ -166,7 +166,8 @@ const TABS = {
           <button class="primary" id="dl-xlsx">Download Excel (Pilot + Main)</button></div>
         <div id="dl-out"></div></div>
       <div class="panel"><h2>Study data (CSV)</h2>
-        <p><b>Download CSV</b> saves everything recorded in this study in one file: every participant and round, the mouse movement, the answers, the pop-ups, the replay labels and the settings (including the freeze).</p>
+        <p><b>Download CSV</b> saves everything recorded in this study in one file: every participant and round, the answers, the pop-ups, the replay labels, the settings (including the freeze) and <b>every mouse event</b> of every participant (warm-ups, practice, pilot and main rounds).
+        The mouse rows are readable: one line per event with <code>table = mouse</code> and the columns participant, study, task_key, round, t_ms, type (move / scroll / click), x, y, scroll_y, zone and clicked.</p>
         <p><b>Upload CSV</b> loads such a file, for example the one from the laptop that ran the experiment. It <b>overrides all study data on this laptop</b>: after loading, every page of this dashboard uses only the data from the file
         (participants, the pilot analysis and freeze, the main-study results, the Excel download) and so does <code>analysis/make_figures.py</code>.</p>
         <p class="small muted">Upload the CSV exactly as it was downloaded; do not open and save it in Excel first. A backup is saved automatically before loading (Backups &amp; tools).</p>

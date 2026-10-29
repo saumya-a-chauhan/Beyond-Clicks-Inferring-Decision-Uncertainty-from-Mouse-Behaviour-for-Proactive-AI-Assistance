@@ -25,10 +25,18 @@ the data and cannot rebuild it.
 
 ## Study-data CSV (dashboard → Data & Excel → Download CSV / Upload CSV)
 
-The complete database in one file (`app/datacsv.py`): columns `table`, `key`, `part`, `parts`, `data`. Each line is one
-database row (participants, tasks, event_batches, popups, ai_requests, labels, responses, settings, audit) as JSON;
-dates are `{"$dt": iso}`, binary data (gzipped mouse events, detector ticks) is `{"$b64": base64}`. Rows longer than
-30,000 characters are split over several lines (`part` of `parts`). The `_meta` line holds the format version, the
+The complete database in one file (`app/datacsv.py`, format version 2): columns `table`, `key`, `part`, `parts`,
+`data`, then the mouse columns. Each line with a table name (participants, tasks, popups, ai_requests, labels,
+responses, settings, audit) is one database row as JSON in `data`; dates are `{"$dt": iso}`, binary data (detector
+ticks) is `{"$b64": base64}`. Rows longer than 30,000 characters are split over several lines (`part` of `parts`).
+
+**Mouse movement** is written readably, one line per logged event, with `table` = `mouse` and these columns:
+`key` (`<task id>/<batch>`, used to rebuild the data on upload), `participant`, `study`, `task_key` (baseline1,
+baseline2, practice, t1-t4, ai), `round`, `t_ms` (ms since the task started), `type` (move, scroll, click), `x`, `y`
+(cursor position in the window, px), `scroll_y` (page scroll, px), `zone` (what was under the cursor: card:<phone>,
+spec:<phone>:<spec>, read:card, empty, ui:...), `clicked` (button clicked, e.g. details:S1A, buy:S1A). Moves are logged
+about 60 times per second while the mouse moves. Version 1 files (mouse data packed in `event_batches` rows) still
+load. The `_meta` line holds the format version, the
 source laptop and the number of rows per table; a file whose counts do not match (cut off or edited) is refused before
 anything changes. Session tokens are never exported; the laptop name (`site_name` setting) stays with each laptop.
 Loading a file **overrides** all study data on the receiving laptop: the database then holds exactly the file's data
