@@ -61,3 +61,22 @@ def test_correct_phone_and_real_trade_off():
                 continue
             higher = not key.endswith("_lux")
             assert _better(a, d, key, higher), f"{sid}: dominated phone must be worse on {key}"
+
+
+def test_measured_values_are_in_the_specs():
+    """The shopping screen shows only the specs ('View details'), so every measured value must be there:
+    the lab table and reviews are shown only after the first choice."""
+    for sid, s in catalog()["sets"].items():
+        for p in s["phones"]:
+            text = " ".join(p["specs"].values())
+            for _, value in p["details"]:
+                assert value in text, (sid, p["id"], value)
+
+
+def test_picture_styles_counterbalanced():
+    looks = {}
+    for sid in ("S1", "S2", "S3", "S4"):
+        for p in catalog()["sets"][sid]["phones"]:
+            looks.setdefault(p["role"], []).append(p["look"])
+    for role, ls in looks.items():
+        assert sorted(ls) == ["bar", "pill", "ring", "square"], (role, ls)

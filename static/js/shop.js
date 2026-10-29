@@ -1,12 +1,51 @@
 /* The phone shop: rendering, cursor logging, AI pop-up and Ask-AI panel. */
 const COLOURS = {
-  Black: "#2b2f38", Green: "#3d8b5f", Blue: "#3466c2", White: "#d4d8e2", Silver: "#aab1be", Grey: "#737a87",
-  Red: "#c0392b", Purple: "#7b4fc4", Orange: "#e07b28", Gold: "#c9a24b", Pink: "#e58fb2",
+  Black: "#2b2f38", Green: "#3d8b5f", Blue: "#3466c2", White: "#e6e9f0", Silver: "#b4bac6", Grey: "#737a87",
+  Red: "#c0392b", Purple: "#7b4fc4", Orange: "#e07b28", Gold: "#c9a24b", Pink: "#e58fb2", Lavender: "#b6a4e3",
+  Teal: "#2a8c8c",
 };
 const SPEC_ORDER = ["price", "battery", "chip", "display", "camera", "storage"];
 
+/* Mix a #rrggbb colour towards white (f > 0) or black (f < 0). */
+function shade(hex, f) {
+  const n = parseInt(hex.slice(1), 16), t = f < 0 ? 0 : 255, a = Math.abs(f);
+  const mix = v => Math.round(v + (t - v) * a);
+  return `rgb(${mix(n >> 16)},${mix((n >> 8) & 255)},${mix(n & 255)})`;
+}
+
+/* Product picture: the front (screen) and the back (colour and camera) of the phone. Drawn, not photographed:
+   every phone gets the same kind of picture, and the camera styles are counterbalanced across roles (phone_sets.json). */
+function phoneSvg(p) {
+  const c = COLOURS[p.colours[0]] || "#555", c2 = COLOURS[p.colours[1]] || c, id = `ph-${p.id}`;
+  const mod = shade(c, -0.28), rim = "rgba(255,255,255,.35)";
+  const lens = (x, y, r) => `<circle cx="${x}" cy="${y}" r="${r}" fill="#15171c" stroke="#5a5f6b" stroke-width="1.2"/>
+    <circle cx="${x}" cy="${y}" r="${r * 0.45}" fill="#26324d"/><circle cx="${x - r * 0.3}" cy="${y - r * 0.3}" r="${r * 0.18}" fill="#cfd8ff" opacity=".8"/>`;
+  const flash = (x, y) => `<circle cx="${x}" cy="${y}" r="2.6" fill="#fff4d2" stroke="#d8c48a" stroke-width=".6"/>`;
+  const cams = {
+    square: `<rect x="77" y="22" width="30" height="30" rx="8" fill="${mod}" stroke="${rim}"/>${lens(85, 30, 5)}${lens(99, 30, 5)}${lens(85, 44, 5)}${flash(99, 44)}`,
+    pill: `<rect x="78" y="21" width="15" height="42" rx="7.5" fill="${mod}" stroke="${rim}"/>${lens(85.5, 29, 5)}${lens(85.5, 42, 5)}${lens(85.5, 55, 5)}${flash(99, 26)}`,
+    ring: `<circle cx="102" cy="40" r="17" fill="${mod}" stroke="${rim}"/>${lens(95, 34, 5.5)}${lens(109, 46, 5.5)}${lens(95, 47, 3.5)}${flash(109, 33)}`,
+    bar: `<rect x="74" y="23" width="56" height="18" rx="9" fill="${mod}" stroke="${rim}"/>${lens(84, 32, 5.5)}${lens(98, 32, 5.5)}${flash(117, 32)}`,
+  };
+  return `<svg class="phone-svg" viewBox="0 0 160 150" role="img" aria-label="${esc(p.name)}">
+    <defs>
+      <linearGradient id="${id}-b" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${shade(c, 0.22)}"/><stop offset="1" stop-color="${shade(c, -0.18)}"/></linearGradient>
+      <linearGradient id="${id}-s" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${shade(c2, 0.1)}"/><stop offset=".55" stop-color="${shade(c, -0.1)}"/><stop offset="1" stop-color="#0d1020"/></linearGradient>
+    </defs>
+    <ellipse cx="82" cy="143" rx="58" ry="4" fill="rgba(0,0,0,.10)"/>
+    <rect x="24" y="8" width="62" height="130" rx="12" fill="#14161b"/>
+    <rect x="27.5" y="11.5" width="55" height="123" rx="9" fill="url(#${id}-s)"/>
+    <circle cx="55" cy="18" r="2.3" fill="#05060a"/>
+    <path d="M30 70 Q55 52 80 66 L80 120 Q55 108 30 124 Z" fill="rgba(255,255,255,.08)"/>
+    <rect x="70" y="14" width="64" height="130" rx="13" fill="url(#${id}-b)" stroke="rgba(0,0,0,.18)"/>
+    <path d="M74 20 Q120 18 128 60 L128 26 Q127 18 118 18 Z" fill="rgba(255,255,255,.18)"/>
+    ${cams[p.look] || cams.square}
+  </svg>`;
+}
+
 const Shop = {
-  /* Render the shop into `root`. opts: {set, card_order, header, prompt, buyLabel, interactive, onBuy} */
+  /* Render the shop into `root`. opts: {set, card_order, header, prompt, buyLabel, interactive, onBuy}
+     Each card shows the picture, colours, price and the start of the specs; "View details" opens all spec rows. */
   render(root, opts) {
     const set = opts.set;
     const byId = Object.fromEntries(set.phones.map(p => [p.id, p]));
@@ -15,20 +54,23 @@ const Shop = {
     const reqText = opts.prompt
       ? `<div class="what">${esc(opts.prompt)}</div>`
       : `<div class="who">${esc(card.persona)}</div><div class="what">${esc(card.text)}</div>`;
+    const first = v => v.split(" · ")[0];
     const cards = order.map(p => {
-      const c1 = COLOURS[p.colours[0]] || "#555", c2 = COLOURS[p.colours[1]] || c1;
       const specs = SPEC_ORDER.map(k => `
         <div class="spec" data-zone="spec:${p.id}:${k}">
-          <span class="k">${esc(set.spec_labels[k])}</span><span class="v">${esc(p.specs[k])}</span>
+          <span class="k">${esc(set.spec_labels[k])}</span>${p.specs[k].split(" · ").map(v => `<span class="v">${esc(v)}</span>`).join("")}
         </div>`).join("");
+      const dots = p.colours.map(n => `<i style="background:${COLOURS[n] || "#888"}" title="${esc(n)}"></i>`).join("");
       return `
       <div class="card" data-zone="card:${p.id}" data-phone="${p.id}">
-        <div class="phone-img" style="--c1:${c1};--c2:${c2}"></div>
+        <div class="phone-pic">${phoneSvg(p)}</div>
         <h3>${esc(p.name)}</h3>
-        <div class="colours">Colours: ${esc(p.colours.join(", "))}</div>
-        ${specs}
+        <div class="colours"><span class="swatches">${dots}</span>${esc(p.colours.join(", "))}</div>
+        <div class="price">${esc(first(p.specs.price))}</div>
+        <div class="teaser">${esc(first(p.specs.display))} · ${esc(first(p.specs.camera))} · ${esc(first(p.specs.storage))} …</div>
+        <div class="specs-full">${specs}</div>
         <div class="btns">
-          <button class="details-btn" data-log="details:${p.id}" data-phone="${p.id}">Details &amp; review</button>
+          <button class="details-btn" data-log="details:${p.id}" data-phone="${p.id}">View details</button>
           <button class="primary buy-btn" data-log="buy:${p.id}" data-phone="${p.id}">${esc(opts.buyLabel || "Buy this phone")}</button>
         </div>
       </div>`;
@@ -40,19 +82,15 @@ const Shop = {
           ${reqText}
         </div>
         <div class="cards">${cards}</div>
-        <div class="details" data-zone="read:details" id="details">
-          <p class="muted">Click <b>Details &amp; review</b> on a phone to see lab test results and a short review here.</p>
-        </div>
       </div>`;
-    const details = root.querySelector("#details");
-    const showDetails = pid => {
-      const p = byId[pid];
-      root.querySelectorAll(".card").forEach(c => c.classList.toggle("selected", c.dataset.phone === pid));
-      details.innerHTML = `<h3>${esc(p.name)}: details and review</h3>
-        <table>${(p.details || []).map(d => `<tr><td>${esc(d[0])}</td><td><b>${esc(d[1])}</b></td></tr>`).join("")}</table>
-        <p>${esc(p.review)}</p>`;
+    /* Opens or closes one phone's full specs. The replay calls this for every logged click, so it stays in step. */
+    const toggleDetails = pid => {
+      const c = root.querySelector(`.card[data-phone="${pid}"]`);
+      if (!c) return;
+      const open = c.classList.toggle("open");
+      c.querySelector(".details-btn").textContent = open ? "Hide details" : "View details";
     };
-    root.querySelectorAll(".details-btn").forEach(b => b.addEventListener("click", () => showDetails(b.dataset.phone)));
+    root.querySelectorAll(".details-btn").forEach(b => b.addEventListener("click", () => toggleDetails(b.dataset.phone)));
     if (opts.interactive !== false) {
       root.querySelectorAll(".buy-btn").forEach(b => b.addEventListener("click", () => {
         const p = byId[b.dataset.phone];
@@ -60,7 +98,7 @@ const Shop = {
           opts.buyLabel ? "Yes, choose it" : "Yes, buy it", "Go back").then(ok => { if (ok) opts.onBuy(p.id); });
       }));
     }
-    return { showDetails, byId };
+    return { toggleDetails, byId };
   },
 };
 

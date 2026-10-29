@@ -647,6 +647,31 @@ def admin_delete_sim():
     return {"ok": True, "deleted": len(ids)}
 
 
+class ClearBody(BaseModel):
+    confirm: str
+
+
+# Settings that describe the laptop and the consent page, not the data: kept when all study data is cleared.
+KEEP_ON_CLEAR = ("study_info", "site_name")
+
+
+@app.post("/api/admin/clear-all", dependencies=[Depends(auth.require_admin)])
+def admin_clear_all(body: ClearBody):
+    """Deletes every participant and everything recorded, and the pilot analysis, freeze and detector settings.
+    A backup is saved first; the audit log is kept."""
+    if body.confirm != "DELETE ALL":
+        raise HTTPException(400, 'Type DELETE ALL to confirm.')
+    path = backup.make_backup("before_clear_all")
+    with db.engine.begin() as conn:
+        n = conn.execute(select(func.count()).select_from(db.participants)).scalar() or 0
+        for tbl in (db.event_batches, db.popups, db.ai_requests, db.labels, db.tasks, db.responses, db.participants):
+            conn.execute(tbl.delete())
+        conn.execute(db.settings_t.delete().where(db.settings_t.c.key.not_in(KEEP_ON_CLEAR)))
+        db.log_audit("all_data_cleared", {"participants": n, "backup": path.name if path else None}, conn=conn)
+    live._tasks.clear()
+    return {"ok": True, "deleted": n, "backup": path.name if path else None}
+
+
 class SettingsBody(BaseModel):
     study_info: dict | None = None
     detector: dict | None = None
@@ -825,8 +850,8 @@ def admin_sheet(study: str = "pilot", include_sim: str = "0"):
 
 
 @app.get("/api/admin/export.xlsx", dependencies=[Depends(auth.require_admin)])
-def admin_export_xlsx(include_sim: str = "0"):
-    data = sheets.to_xlsx(_flag(include_sim))
+def admin_export_xlsx(include_sim: str = "0", include_mouse: str = "0"):
+    data = sheets.to_xlsx(_flag(include_sim), _flag(include_mouse))
     name = f"beyond_clicks_results_{datetime.now():%Y%m%d_%H%M}.xlsx"
     return Response(data, media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                     headers={"Content-Disposition": f'attachment; filename="{name}"'})

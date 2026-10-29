@@ -13,9 +13,8 @@ Code: `app/features.py` (signs, z-scores) and `app/detector.py` (trigger rules).
   and clicks.
 - **Zones** come from the page itself:
   - `card:<phone>`: a phone card
-  - `spec:<phone>:<spec>`: one spec row inside a card
-  - `read:card` and `read:details`: the requirement card and the details/review panel. Resting there is reading,
-    not hesitation.
+  - `spec:<phone>:<spec>`: one spec row inside a card (visible after clicking "View details" on that card)
+  - `read:card`: the requirement card. Resting there is reading, not hesitation.
   - `ui:*`: the AI panel and buttons
   - `empty`: everything else
 

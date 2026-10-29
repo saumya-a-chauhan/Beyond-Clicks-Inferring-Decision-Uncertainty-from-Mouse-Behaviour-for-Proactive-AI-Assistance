@@ -21,14 +21,14 @@ SYSTEM = (
     "Use ONLY the phone data provided below; never invent or guess specs, prices or test results. "
     "If something is not in the data, say you do not have that information. "
     "Explain trade-offs in plain, friendly English for a non-technical buyer, relating them to the buyer's stated needs. "
-    "Use the lab test results to explain what the headline numbers really mean; convert values given in different units (minutes and hours; GB, TB and MB; millions and Indian lakhs) to the same unit before comparing, and remember that lower lux and lower f-numbers are better. "
+    "Use the measured values in the specs (screen-on time, low-light limit, zoom, brightness, free space, speed after 30 min) to explain what the headline numbers really mean; convert values given in different units (minutes and hours; GB, TB and MB; millions and Indian lakhs) to the same unit before comparing, and remember that lower lux and lower f-numbers are better. "
     "Do NOT tell the buyer which phone to buy and do not rank the phones; help them understand so they can decide. "
     "Keep it under 110 words. Write numbers as digits with their units (for example 12 h 40 min, 2 lux, Rs 24,999). Plain text only: no markdown, no headings, no bold. "
     "Use 3 to 5 short lines, each starting with '- '."
 )
 
 GLOSSARY = {
-    "battery": "mAh is the battery's size, not how long it lasts: an efficient chip (smaller nm) and screen matter as much. Compare the lab screen-on times, and convert them to the same unit first: 760 minutes is 12 h 40 min, and 13 h 50 min is 830 minutes.",
+    "battery": "mAh is the battery's size, not how long it lasts: an efficient chip (smaller nm) and screen matter as much. Compare the screen-on times listed under Battery, and convert them to the same unit first: 760 minutes is 12 h 40 min, and 13 h 50 min is 830 minutes.",
     "chip": "The first AnTuTu run shows peak speed, but phones that get hot slow down in long games. 'Keeps 88% of its speed after 30 min' or 'drops to 0.61x' tells you the speed in a long session: multiply the first-run score by it. Indian number format: 14,50,000 is 1.45 million and 8,20,000 is 0.82 million. 'Gaming Mode' and more RAM do not make a phone faster.",
     "display": "AMOLED screens have deeper blacks and richer colours than LCD. Hz is scrolling smoothness. Nits and cd/m2 are the same unit of brightness: higher is easier to see in sunlight, so 1,800 cd/m2 is brighter than 1,200 nits.",
     "camera": "Megapixels (MP) are resolution, not quality. Sensor size: a SMALLER second number means a BIGGER sensor (1/1.4\" is bigger than 1/1.56\"). Aperture: a SMALLER f-number lets in MORE light (f/1.7 beats f/2.0). Low-light tests in lux: a LOWER number is better, because the phone still takes sharp photos in darker light (2 lux is darker than 4 lux). Optical zoom (a telephoto lens, e.g. 3x optical) stays sharp; 'digital zoom' (e.g. 100x) only crops and enlarges.",
@@ -42,9 +42,9 @@ def set_context(set_id):
     labels = catalog()["spec_labels"]
     lines = [f"Buyer: {s['card']['persona']} {s['card']['text']}", "Phones:"]
     for p in s["phones"]:
+        # only what the participant can see while shopping (lab table and reviews come after the choice)
         specs = "; ".join(f"{labels[k]}: {v}" for k, v in p["specs"].items())
-        det = "; ".join(f"{a}: {b}" for a, b in p.get("details", []))
-        lines.append(f"* {p['name']} - {specs}. Lab results: {det}. Review: {p['review']}")
+        lines.append(f"* {p['name']} - {specs}")
     return "\n".join(lines)
 
 
@@ -61,11 +61,11 @@ def build_prompt(set_id, mode, args):
     if mode == "compare":
         a, b = (args.get("pair") or [None, None])[:2]
         task = (f"Compare {_name(set_id, a)} and {_name(set_id, b)} for this buyer. "
-                "Point out which differences matter most for the buyer's priorities and budget, using the lab results.")
+                "Point out which differences matter most for the buyer's priorities and budget, using the measured values.")
     elif mode == "explain":
         spec = args.get("spec") or "battery"
         task = (f"Explain in simple words what the '{labels.get(spec, spec)}' line means and how to compare it fairly "
-                "across these phones for this buyer (mention the relevant lab result).")
+                "across these phones for this buyer (mention the relevant measured value).")
     elif mode == "ask":
         q = (args.get("question") or "").strip()[:400]
         task = f"Answer the buyer's question: \"{q}\""
@@ -135,18 +135,18 @@ def fallback_answer(set_id, mode, args):
         pair = (args.get("pair") or [])[:2]
         phones = [p for p in s["phones"] if p["id"] in pair] or s["phones"][:2]
         lines = []
+        pr = s["card"].get("priorities", [])[:2]
         for p in phones:
-            det = ", ".join(f"{a.lower()} {b}" for a, b in p.get("details", [])[:2])
-            lines.append(f"- {p['name']}: {p['specs']['price']}; {det}.")
+            lines.append(f"- {p['name']}: {p['specs']['price']}; " + "; ".join(p["specs"][k] for k in pr) + ".")
         lines.append(f"- Your card: {s['card']['text']}")
-        lines.append("- Compare the lab results for the card's priorities, not only the headline numbers.")
+        lines.append("- Convert the numbers to the same unit before comparing, and check the card's priorities in order.")
         return "\n".join(lines)
     if mode == "explain":
         spec = args.get("spec") or "battery"
         return f"- {labels.get(spec, spec)}: {GLOSSARY.get(spec, GLOSSARY['battery'])}"
     if mode == "ask":
         return ("- The AI assistant is not available right now.\n"
-                "- Open 'Details & review' on each phone: the lab results show real battery life, camera quality and speed.\n"
+                "- Click 'View details' on each phone: measured values such as screen-on time, low-light limit and free space matter more than headline numbers.\n"
                 f"- Your card: {s['card']['text']}")
     pr = s["card"].get("priorities", [])
     return "\n".join([f"- Your card: {s['card']['text']}"] +

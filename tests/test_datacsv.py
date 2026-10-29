@@ -2,6 +2,8 @@
 import os
 
 os.environ.setdefault("DATABASE_URL", "sqlite:///./_pytest.db")
+if os.environ["DATABASE_URL"] == "sqlite:///./_pytest.db" and os.path.exists("_pytest.db"):
+    os.remove("_pytest.db")                                # start from an empty test database every run
 
 import pytest  # noqa: E402
 from sqlalchemy import func, select  # noqa: E402

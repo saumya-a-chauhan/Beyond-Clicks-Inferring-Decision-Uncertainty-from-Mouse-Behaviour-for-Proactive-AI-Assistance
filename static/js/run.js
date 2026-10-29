@@ -100,7 +100,7 @@ const PAGES = {
     <p>Take the time you need, as you would when really buying a phone. There is a small bonus for each correct choice.</p>
     <div class="notice info">Please keep this browser window the same size for the whole session, and use the mouse normally.</div>`,
   tasks_intro: `<h2>Now the real rounds</h2>
-    <p>Each round shows four phones. Some numbers on the cards can be misleading, so open <b>Details &amp; review</b> if you want lab test results.</p>
+    <p>Each round shows four phones. Click <b>View details</b> on a phone to see all its specs; you can open several phones at once. Read carefully: the numbers are not all written in the same units.</p>
     <p>Choose the phone that best fits the card, then click <b>Buy this phone</b>.</p>`,
   replay_intro: `<h2>Replay: when did you feel unsure?</h2>
     <p>You will now watch a replay of your mouse movement for each of the 4 rounds, at normal speed.</p>
@@ -248,14 +248,17 @@ const STEPS = {
   async switch(st) {
     const t = await API.get(`/api/task/by-key/${st.task_key}`, S.token);
     const phones = t.card_order.map(id => t.set.phones.find(p => p.id === id));
-    const specRows = SPEC_ORDER.map(k => `<tr><th>${esc(t.set.spec_labels[k])}</th>${phones.map(p => `<td>${esc(p.specs[k])}</td>`).join("")}</tr>`).join("");
+    const specCell = v => v.split(" · ").map(esc).join("<br>");
+    const specRows = SPEC_ORDER.map(k => `<tr><th>${esc(t.set.spec_labels[k])}</th>${phones.map(p => `<td>${specCell(p.specs[k])}</td>`).join("")}</tr>`).join("");
     const detKeys = [...new Set(phones.flatMap(p => (p.details || []).map(d => d[0])))];
-    const detRows = detKeys.map(k => `<tr><th>${esc(k)}</th>${phones.map(p => { const d = (p.details || []).find(x => x[0] === k); return `<td>${esc(d ? d[1] : "")}</td>`; }).join("")}</tr>`).join("");
+    const detRows = detKeys.map(k => `<tr><th>${esc(k)}</th>${phones.map(p => { const d = (p.details || []).find(x => x[0] === k); return `<td>${esc(d ? d[1] : "")}</td>`; }).join("")}</tr>`).join("")
+      + `<tr><th>Review</th>${phones.map(p => `<td>${esc(p.review || "")}</td>`).join("")}</tr>`;
     const radios = phones.map(p => `<label class="check"><input type="radio" name="fin" value="${p.id}" ${p.id === t.chosen ? "checked" : ""}> ${esc(p.name)}${p.id === t.chosen ? " (your choice)" : ""}</label>`).join("");
     app.innerHTML = `<div class="wide"><div class="panel">
       <h2>Here are all four phones side by side</h2>
       <p class="muted">The card said: ${esc(t.set.card.persona)} ${esc(t.set.card.text)}</p>
-      <div style="overflow:auto"><table class="cmp"><tr><th></th>${phones.map(p => `<th>${esc(p.name)}</th>`).join("")}</tr>${specRows}${detRows}</table></div>
+      <div style="overflow:auto"><table class="cmp"><tr><th></th>${phones.map(p => `<th>${esc(p.name)}</th>`).join("")}</tr>${specRows}
+        <tr class="cmp-sec"><th colspan="${phones.length + 1}">Lab test results and reviews</th></tr>${detRows}</table></div>
       <h3>Now that you see everything together, would you like to change your choice?</h3>
       ${radios}
       <div class="actions"><button class="primary big" id="go">Continue</button></div></div></div>`;
@@ -459,7 +462,7 @@ function runReplay(st, R) {
       while (is < ev.s.length && ev.s[is][0] <= t) { window.scrollTo(0, ev.s[is][1]); is++; }
       while (ic < ev.c.length && ev.c[ic][0] <= t) {
         const lab = ev.c[ic][4] || "";
-        if (lab.startsWith("details:")) shop.showDetails(lab.slice(8));
+        if (lab.startsWith("details:")) shop.toggleDetails(lab.slice(8));
         ic++;
       }
       bar.querySelector(".fill").style.width = `${Math.min(100, 100 * t / dur)}%`;

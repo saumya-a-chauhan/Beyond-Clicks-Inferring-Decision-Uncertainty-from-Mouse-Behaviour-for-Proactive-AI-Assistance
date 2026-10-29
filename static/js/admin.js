@@ -158,7 +158,9 @@ const TABS = {
     view.innerHTML = `
       <div class="panel"><h2>Results (Excel)</h2>
         <p>One row per participant and shopping round: a <b>Pilot</b> sheet, a <b>Main</b> sheet, and an <b>About</b> sheet explaining every column.
+        Each row also has the round's mouse numbers (distance, resting time, switches between phones, longest rests, scroll flips, time on each phone, hesitation score).
         It is built from the current data each time, so every participant so far is included.</p>
+        <label class="check"><input type="checkbox" id="dl-mouse"> Include all mouse-movement data: every cursor point, scroll and click (<b>Mouse raw</b>), the detector's check every 0.5 s with the 5 signs and the score (<b>Mouse signs</b>), and the replay's unsure marks. Large file, takes longer.</label>
         <label class="check"><input type="checkbox" id="dl-sim"> Include simulated (test) participants</label>
         <div class="actions" style="justify-content:flex-start">
           <button class="primary" id="dl-xlsx">Download Excel (Pilot + Main)</button></div>
@@ -226,7 +228,7 @@ const TABS = {
     view.querySelector("#v-pilot").onclick = () => { study = "pilot"; load(); };
     view.querySelector("#v-main").onclick = () => { study = "main"; load(); };
     view.querySelector("#v-all").onchange = render;
-    view.querySelector("#dl-xlsx").onclick = e => downloadFile(`/api/admin/export.xlsx?${simQ()}`, "beyond_clicks_results.xlsx", e.target, view.querySelector("#dl-out"));
+    view.querySelector("#dl-xlsx").onclick = e => downloadFile(`/api/admin/export.xlsx?${simQ()}&include_mouse=${view.querySelector("#dl-mouse").checked ? 1 : 0}`, "beyond_clicks_results.xlsx", e.target, view.querySelector("#dl-out"));
     view.querySelector("#csv-dl").onclick = e => downloadFile("/api/admin/data.csv", "beyond_clicks_study_data.csv", e.target, view.querySelector("#csv-out"));
     view.querySelector("#csv-up").onclick = async e => {
       const f = view.querySelector("#csv-file").files[0];
@@ -305,7 +307,12 @@ const TABS = {
         <button id="llm">Run check</button><pre class="json" id="llmout" style="margin-top:12px">–</pre></div>
       <div class="panel"><h2>Simulated data</h2>
         <p>Delete every participant created by <code>scripts/simulate.py</code>.</p>
-        <button class="danger" id="delsim">Delete simulated participants</button></div>`;
+        <button class="danger" id="delsim">Delete simulated participants</button></div>
+      <div class="panel"><h2>Clear all study data</h2>
+        <p>Deletes <b>every</b> participant and everything recorded (rounds, mouse data, answers, pop-ups, replay labels), the pilot analysis and the <b>freeze</b>, so the study starts again from P01.
+        The consent-page information and the laptop name are kept. A backup of the current data is saved first (listed above), so it can be restored.</p>
+        <p class="small muted">Use it once before the real pilot to remove test runs. Never use it during the study.</p>
+        <button class="danger" id="clearall">Clear all study data</button><div id="clearout"></div></div>`;
     const loadBk = async () => {
       const b = await API.get("/api/admin/backups");
       view.querySelector("#bkfolder").textContent = b.folder ? `Folder: ${b.folder}` : "";
@@ -320,6 +327,16 @@ const TABS = {
     view.querySelector("#llm").onclick = async () => {
       view.querySelector("#llmout").textContent = "Checking…";
       view.querySelector("#llmout").textContent = JSON.stringify(await API.post("/api/admin/llm-test"), null, 2);
+    };
+    view.querySelector("#clearall").onclick = async () => {
+      const typed = prompt("This deletes ALL participants and all recorded data on this laptop (a backup is saved first).\n\nType DELETE ALL to confirm:");
+      if (typed === null) return;
+      const out = view.querySelector("#clearout");
+      try {
+        const r = await API.post("/api/admin/clear-all", { confirm: typed.trim() });
+        out.innerHTML = `<div class="notice good">All study data cleared: ${r.deleted} participant(s) deleted. Backup saved first: <code>${esc(r.backup || "")}</code>. The next participant will be P01.</div>`;
+        loadBk();
+      } catch (e) { out.innerHTML = `<div class="notice bad">${esc(e.message)}</div>`; }
     };
     view.querySelector("#delsim").onclick = async () => {
       if (!confirm("Delete all simulated participants?")) return;

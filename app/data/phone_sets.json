@@ -1,5 +1,5 @@
 {
- "_note": "Fictional phones. No summary scores are shown: only spec-sheet terms and lab measurements, written in mixed units on purpose (minutes vs hours, GB vs TB vs MB, millions vs lakhs; lower lux and lower f-numbers are better; a larger sensor has a smaller second number). Each main set has 1 correct phone (rank 1), 1 main trap (rank 2), 1 second trap (rank 3) and 1 dominated phone (rank 4). The correct phone is the best phone within budget on the card's Priority 1, decided by the lab measurement in '_truth' (hidden from the browser). The main trap is better on Priority 2 and has flashier headline specs, so it is a real trade-off. The second trap is over budget. The dominated phone is worse than the correct phone on every measured value and costs the same or more. tests/test_phone_sets.py checks all of this. Card positions are shuffled per participant.",
+ "_note": "Fictional phones. No summary scores are shown: only spec-sheet terms and lab measurements, written in mixed units on purpose (minutes vs hours, GB vs TB vs MB, millions vs lakhs; lower lux and lower f-numbers are better; a larger sensor has a smaller second number). Each main set has 1 correct phone (rank 1), 1 main trap (rank 2), 1 second trap (rank 3) and 1 dominated phone (rank 4). The correct phone is the best phone within budget on the card's Priority 1, decided by the lab measurement in '_truth' (hidden from the browser). The main trap is better on Priority 2 and has flashier headline specs, so it is a real trade-off. The second trap is over budget. The dominated phone is worse than the correct phone on every measured value and costs the same or more. tests/test_phone_sets.py checks all of this. Card positions are shuffled per participant. Shopping screen: each card shows a picture, the colours, the price and the start of the specs; 'View details' opens the full spec rows, which include the measured values (in mixed units). The 'details' and 'review' entries are shown only on the 'change your choice?' screen after the round. Picture styles ('look') are counterbalanced so each role gets each style once across S1-S4.",
  "spec_labels": {
   "price": "Price",
   "battery": "Battery",
@@ -29,10 +29,10 @@
      ],
      "specs": {
       "price": "₹15,999",
-      "battery": "5000 mAh",
+      "battery": "5000 mAh · screen-on time 11 h",
       "chip": "Dimensity 6080 (6 nm)",
       "display": "6.5\" LCD, 90 Hz",
-      "camera": "50 MP",
+      "camera": "50 MP · low light: sharp photos down to 9 lux",
       "storage": "6 GB / 128 GB"
      },
      "details": [
@@ -45,7 +45,8 @@
        "sharp photos down to 9 lux"
       ]
      ],
-     "review": "A plain everyday phone. Fine for calls, chat and video."
+     "review": "A plain everyday phone. Fine for calls, chat and video.",
+     "look": "square"
     },
     {
      "id": "P2",
@@ -56,10 +57,10 @@
      ],
      "specs": {
       "price": "₹17,499",
-      "battery": "5000 mAh",
+      "battery": "5000 mAh · screen-on time 726 minutes",
       "chip": "Snapdragon 4 Gen 2 (4 nm)",
       "display": "6.6\" LCD, 120 Hz",
-      "camera": "50 MP",
+      "camera": "50 MP · low light: sharp photos down to 8 lux",
       "storage": "8 GB / 128 GB"
      },
      "details": [
@@ -72,7 +73,8 @@
        "sharp photos down to 8 lux"
       ]
      ],
-     "review": "Light, with a smooth 120 Hz screen."
+     "review": "Light, with a smooth 120 Hz screen.",
+     "look": "pill"
     },
     {
      "id": "P3",
@@ -83,10 +85,10 @@
      ],
      "specs": {
       "price": "₹18,999",
-      "battery": "5000 mAh",
+      "battery": "5000 mAh · screen-on time 11 h 35 min",
       "chip": "Helio G99 (6 nm)",
       "display": "6.7\" AMOLED, 90 Hz",
-      "camera": "64 MP",
+      "camera": "64 MP · low light: sharp photos down to 7 lux",
       "storage": "8 GB / 512 GB"
      },
      "details": [
@@ -99,7 +101,8 @@
        "sharp photos down to 7 lux"
       ]
      ],
-     "review": "Huge storage for photos and videos."
+     "review": "Huge storage for photos and videos.",
+     "look": "ring"
     },
     {
      "id": "P4",
@@ -110,10 +113,10 @@
      ],
      "specs": {
       "price": "₹14,499",
-      "battery": "5000 mAh",
+      "battery": "5000 mAh · screen-on time 10.2 hours",
       "chip": "Unisoc T616 (12 nm)",
       "display": "6.5\" LCD, 90 Hz",
-      "camera": "48 MP",
+      "camera": "48 MP · low light: sharp photos down to 12 lux",
       "storage": "4 GB / 64 GB"
      },
      "details": [
@@ -126,7 +129,8 @@
        "sharp photos down to 12 lux"
       ]
      ],
-     "review": "The cheapest option here. Basic but works."
+     "review": "The cheapest option here. Basic but works.",
+     "look": "bar"
     }
    ],
    "answers": {
@@ -158,10 +162,10 @@
      ],
      "specs": {
       "price": "₹24,999",
-      "battery": "5000 mAh",
-      "chip": "Snapdragon 7s Gen 3 (4 nm)",
+      "battery": "5000 mAh · screen-on time 13 h 50 min",
+      "chip": "Snapdragon 7s Gen 3 (4 nm) · AnTuTu 8,20,000",
       "display": "6.6\" AMOLED, 120 Hz (LTPO)",
-      "camera": "50 MP, 1/1.56\" sensor, f/1.8, OIS",
+      "camera": "50 MP, 1/1.56\" sensor, f/1.8, OIS · low light: sharp photos down to 4 lux",
       "storage": "8 GB / 256 GB"
      },
      "details": [
@@ -184,7 +188,8 @@
       "lowlight_lux": 4,
       "antutu": 820000,
       "price": 24999
-     }
+     },
+     "look": "square"
     },
     {
      "id": "S1B",
@@ -197,10 +202,10 @@
      ],
      "specs": {
       "price": "₹23,499",
-      "battery": "6000 mAh",
-      "chip": "Dimensity 6100+ (6 nm)",
+      "battery": "6000 mAh · screen-on time 760 minutes",
+      "chip": "Dimensity 6100+ (6 nm) · AnTuTu 5,30,000",
       "display": "6.7\" LCD, 144 Hz",
-      "camera": "108 MP, 1/1.4\" sensor, f/1.7, OIS",
+      "camera": "108 MP, 1/1.4\" sensor, f/1.7, OIS · low light: sharp photos down to 2 lux",
       "storage": "8 GB / 128 GB"
      },
      "details": [
@@ -223,7 +228,8 @@
       "lowlight_lux": 2,
       "antutu": 530000,
       "price": 23499
-     }
+     },
+     "look": "pill"
     },
     {
      "id": "S1C",
@@ -236,10 +242,10 @@
      ],
      "specs": {
       "price": "₹25,999",
-      "battery": "4500 mAh",
-      "chip": "Snapdragon 8 Gen 2 (4 nm)",
+      "battery": "4500 mAh · screen-on time 11.4 hours",
+      "chip": "Snapdragon 8 Gen 2 (4 nm) · AnTuTu 1.21 million",
       "display": "6.7\" AMOLED, 144 Hz",
-      "camera": "64 MP, 1/1.5\" sensor, f/1.8, OIS",
+      "camera": "64 MP, 1/1.5\" sensor, f/1.8, OIS · low light: sharp photos down to 3 lux",
       "storage": "12 GB / 256 GB"
      },
      "details": [
@@ -262,7 +268,8 @@
       "lowlight_lux": 3,
       "antutu": 1210000,
       "price": 25999
-     }
+     },
+     "look": "ring"
     },
     {
      "id": "S1D",
@@ -275,10 +282,10 @@
      ],
      "specs": {
       "price": "₹24,999",
-      "battery": "5000 mAh",
-      "chip": "Helio G99 (6 nm)",
+      "battery": "5000 mAh · screen-on time 9 h 55 min",
+      "chip": "Helio G99 (6 nm) · AnTuTu 4,10,000",
       "display": "6.5\" LCD, 90 Hz",
-      "camera": "50 MP, 1/2.8\" sensor, f/2.0",
+      "camera": "50 MP, 1/2.8\" sensor, f/2.0 · low light: sharp photos down to 10 lux",
       "storage": "6 GB / 128 GB"
      },
      "details": [
@@ -301,7 +308,8 @@
       "lowlight_lux": 10,
       "antutu": 410000,
       "price": 24999
-     }
+     },
+     "look": "bar"
     }
    ]
   },
@@ -328,10 +336,10 @@
      ],
      "specs": {
       "price": "₹29,499",
-      "battery": "5000 mAh",
+      "battery": "5000 mAh · screen-on time 12 h 30 min",
       "chip": "Dimensity 7300 (4 nm)",
-      "display": "6.7\" AMOLED, 120 Hz",
-      "camera": "50 MP main + 50 MP telephoto (3× optical), OIS",
+      "display": "6.7\" AMOLED, 120 Hz · peak brightness 1,200 nits",
+      "camera": "50 MP main + 50 MP telephoto (3× optical), OIS · zoom: faces stay sharp up to 6×",
       "storage": "8 GB / 256 GB"
      },
      "details": [
@@ -354,7 +362,8 @@
       "nits": 1200,
       "battery_h": 12.5,
       "price": 29499
-     }
+     },
+     "look": "pill"
     },
     {
      "id": "S2B",
@@ -367,10 +376,10 @@
      ],
      "specs": {
       "price": "₹27,999",
-      "battery": "5000 mAh",
+      "battery": "5000 mAh · screen-on time 740 minutes",
       "chip": "Snapdragon 7s Gen 2 (4 nm)",
-      "display": "6.8\" AMOLED, 120 Hz",
-      "camera": "200 MP main, 100× digital zoom",
+      "display": "6.8\" AMOLED, 120 Hz · peak brightness 1,800 cd/m²",
+      "camera": "200 MP main, 100× digital zoom · zoom: faces stay sharp up to 2×",
       "storage": "12 GB / 256 GB"
      },
      "details": [
@@ -393,7 +402,8 @@
       "nits": 1800,
       "battery_h": 12.33,
       "price": 27999
-     }
+     },
+     "look": "ring"
     },
     {
      "id": "S2C",
@@ -406,10 +416,10 @@
      ],
      "specs": {
       "price": "₹31,999",
-      "battery": "4800 mAh",
+      "battery": "4800 mAh · screen-on time 11.1 hours",
       "chip": "Snapdragon 7+ Gen 3 (4 nm)",
-      "display": "6.7\" AMOLED, 120 Hz",
-      "camera": "50 MP main + 50 MP telephoto (3× optical), OIS",
+      "display": "6.7\" AMOLED, 120 Hz · peak brightness 2,000 nits",
+      "camera": "50 MP main + 50 MP telephoto (3× optical), OIS · zoom: faces stay sharp up to 5×",
       "storage": "12 GB / 256 GB"
      },
      "details": [
@@ -432,7 +442,8 @@
       "nits": 2000,
       "battery_h": 11.1,
       "price": 31999
-     }
+     },
+     "look": "bar"
     },
     {
      "id": "S2D",
@@ -445,10 +456,10 @@
      ],
      "specs": {
       "price": "₹29,999",
-      "battery": "5000 mAh",
+      "battery": "5000 mAh · screen-on time 10 h 20 min",
       "chip": "Helio G99 (6 nm)",
-      "display": "6.6\" LCD, 90 Hz",
-      "camera": "64 MP main, 10× digital zoom",
+      "display": "6.6\" LCD, 90 Hz · peak brightness 800 nits",
+      "camera": "64 MP main, 10× digital zoom · zoom: faces stay sharp up to 1.5×",
       "storage": "8 GB / 128 GB"
      },
      "details": [
@@ -471,7 +482,8 @@
       "nits": 800,
       "battery_h": 10.33,
       "price": 29999
-     }
+     },
+     "look": "square"
     }
    ]
   },
@@ -498,11 +510,11 @@
      ],
      "specs": {
       "price": "₹21,999",
-      "battery": "5000 mAh",
+      "battery": "5000 mAh · screen-on time 12.4 hours",
       "chip": "Dimensity 6300 (6 nm)",
-      "display": "6.6\" IPS LCD, 90 Hz",
+      "display": "6.6\" IPS LCD, 90 Hz · peak brightness 600 nits",
       "camera": "50 MP, f/1.8",
-      "storage": "6 GB / 256 GB"
+      "storage": "6 GB / 256 GB · 228 GB free out of the box"
      },
      "details": [
       [
@@ -525,7 +537,8 @@
       "amoled": false,
       "battery_h": 12.4,
       "price": 21999
-     }
+     },
+     "look": "ring"
     },
     {
      "id": "S3B",
@@ -538,11 +551,11 @@
      ],
      "specs": {
       "price": "₹20,999",
-      "battery": "5000 mAh",
+      "battery": "5000 mAh · screen-on time 11 h 50 min",
       "chip": "Snapdragon 6s Gen 3 (6 nm)",
-      "display": "6.7\" AMOLED, 120 Hz",
+      "display": "6.7\" AMOLED, 120 Hz · peak brightness 1,400 nits",
       "camera": "64 MP, f/1.8",
-      "storage": "8 GB + 8 GB virtual RAM (16 GB*) / 128 GB"
+      "storage": "8 GB + 8 GB virtual RAM (16 GB*) / 128 GB · 0.1 TB free out of the box"
      },
      "details": [
       [
@@ -565,7 +578,8 @@
       "amoled": true,
       "battery_h": 11.83,
       "price": 20999
-     }
+     },
+     "look": "bar"
     },
     {
      "id": "S3C",
@@ -578,11 +592,11 @@
      ],
      "specs": {
       "price": "₹23,499",
-      "battery": "5000 mAh",
+      "battery": "5000 mAh · screen-on time 760 minutes",
       "chip": "Dimensity 7025 (6 nm)",
-      "display": "6.7\" AMOLED, 120 Hz",
+      "display": "6.7\" AMOLED, 120 Hz · peak brightness 1,300 nits",
       "camera": "50 MP, OIS",
-      "storage": "8 GB / 256 GB"
+      "storage": "8 GB / 256 GB · 0.23 TB free out of the box"
      },
      "details": [
       [
@@ -605,7 +619,8 @@
       "amoled": true,
       "battery_h": 12.67,
       "price": 23499
-     }
+     },
+     "look": "square"
     },
     {
      "id": "S3D",
@@ -618,11 +633,11 @@
      ],
      "specs": {
       "price": "₹21,999",
-      "battery": "5000 mAh",
+      "battery": "5000 mAh · screen-on time 10.6 hours",
       "chip": "Unisoc T616 (12 nm)",
-      "display": "6.5\" LCD, 90 Hz",
+      "display": "6.5\" LCD, 90 Hz · peak brightness 500 nits",
       "camera": "50 MP, f/2.0",
-      "storage": "6 GB / 128 GB"
+      "storage": "6 GB / 128 GB · 98,000 MB free out of the box"
      },
      "details": [
       [
@@ -645,7 +660,8 @@
       "amoled": false,
       "battery_h": 10.6,
       "price": 21999
-     }
+     },
+     "look": "pill"
     }
    ]
   },
@@ -672,8 +688,8 @@
      ],
      "specs": {
       "price": "₹27,999",
-      "battery": "5000 mAh",
-      "chip": "Snapdragon 7+ Gen 3 (4 nm), vapour-chamber cooling",
+      "battery": "5000 mAh · while gaming 350 minutes",
+      "chip": "Snapdragon 7+ Gen 3 (4 nm), vapour-chamber cooling · AnTuTu 1.32 million (first run) · after 30 min of gaming: keeps 88% of its speed",
       "display": "6.7\" AMOLED, 144 Hz",
       "camera": "50 MP, OIS",
       "storage": "12 GB / 256 GB"
@@ -698,7 +714,8 @@
       "peak": 1320000,
       "gaming_battery_h": 5.83,
       "price": 27999
-     }
+     },
+     "look": "bar"
     },
     {
      "id": "S4B",
@@ -711,8 +728,8 @@
      ],
      "specs": {
       "price": "₹26,999",
-      "battery": "6000 mAh",
-      "chip": "Dimensity 8300 (4 nm), 'Gaming Mode'",
+      "battery": "6000 mAh · while gaming 6 h 40 min",
+      "chip": "Dimensity 8300 (4 nm), 'Gaming Mode' · AnTuTu 14,50,000 (first run) · after 30 min of gaming: drops to 0.61× of its speed",
       "display": "6.8\" AMOLED, 165 Hz",
       "camera": "64 MP",
       "storage": "16 GB / 256 GB"
@@ -737,7 +754,8 @@
       "peak": 1450000,
       "gaming_battery_h": 6.67,
       "price": 26999
-     }
+     },
+     "look": "square"
     },
     {
      "id": "S4C",
@@ -750,8 +768,8 @@
      ],
      "specs": {
       "price": "₹29,999",
-      "battery": "5500 mAh",
-      "chip": "Snapdragon 8s Gen 3 (4 nm)",
+      "battery": "5500 mAh · while gaming 6.1 hours",
+      "chip": "Snapdragon 8s Gen 3 (4 nm) · AnTuTu 1.6 million (first run) · after 30 min of gaming: keeps 80% of its speed",
       "display": "6.7\" AMOLED, 144 Hz",
       "camera": "50 MP, OIS",
       "storage": "12 GB / 512 GB"
@@ -776,7 +794,8 @@
       "peak": 1600000,
       "gaming_battery_h": 6.1,
       "price": 29999
-     }
+     },
+     "look": "pill"
     },
     {
      "id": "S4D",
@@ -789,8 +808,8 @@
      ],
      "specs": {
       "price": "₹27,999",
-      "battery": "5000 mAh",
-      "chip": "Dimensity 7050 (6 nm)",
+      "battery": "5000 mAh · while gaming 4.8 hours",
+      "chip": "Dimensity 7050 (6 nm) · AnTuTu 6,80,000 (first run) · after 30 min of gaming: keeps 70% of its speed",
       "display": "6.6\" AMOLED, 120 Hz",
       "camera": "64 MP",
       "storage": "8 GB / 256 GB"
@@ -815,7 +834,8 @@
       "peak": 680000,
       "gaming_battery_h": 4.8,
       "price": 27999
-     }
+     },
+     "look": "ring"
     }
    ]
   },
@@ -842,11 +862,11 @@
      ],
      "specs": {
       "price": "₹19,499",
-      "battery": "5000 mAh",
+      "battery": "5000 mAh · screen-on time 15 h 10 min",
       "chip": "Snapdragon 4s Gen 2 (4 nm)",
       "display": "6.7\" LCD, 90 Hz",
       "camera": "50 MP",
-      "storage": "6 GB / 128 GB"
+      "storage": "6 GB / 128 GB · 104 GB free out of the box"
      },
      "details": [
       [
@@ -863,7 +883,8 @@
       "battery_h": 15.17,
       "free_gb": 104,
       "price": 19499
-     }
+     },
+     "look": "pill"
     },
     {
      "id": "S5B",
@@ -876,11 +897,11 @@
      ],
      "specs": {
       "price": "₹18,999",
-      "battery": "6000 mAh",
+      "battery": "6000 mAh · screen-on time 870 minutes",
       "chip": "Helio G85 (12 nm)",
       "display": "6.7\" LCD, 90 Hz",
       "camera": "50 MP",
-      "storage": "4 GB / 256 GB"
+      "storage": "4 GB / 256 GB · 0.23 TB free out of the box"
      },
      "details": [
       [
@@ -897,7 +918,8 @@
       "battery_h": 14.5,
       "free_gb": 230,
       "price": 18999
-     }
+     },
+     "look": "ring"
     },
     {
      "id": "S5C",
@@ -910,11 +932,11 @@
      ],
      "specs": {
       "price": "₹20,999",
-      "battery": "5500 mAh",
+      "battery": "5500 mAh · screen-on time 16.1 hours",
       "chip": "Dimensity 6100+ (6 nm)",
       "display": "6.6\" LCD, 90 Hz",
       "camera": "50 MP",
-      "storage": "6 GB / 256 GB"
+      "storage": "6 GB / 256 GB · 230 GB free out of the box"
      },
      "details": [
       [
@@ -931,7 +953,8 @@
       "battery_h": 16.1,
       "free_gb": 230,
       "price": 20999
-     }
+     },
+     "look": "bar"
     },
     {
      "id": "S5D",
@@ -944,11 +967,11 @@
      ],
      "specs": {
       "price": "₹19,499",
-      "battery": "5000 mAh",
+      "battery": "5000 mAh · screen-on time 11 h 50 min",
       "chip": "Unisoc T606 (12 nm)",
       "display": "6.5\" LCD, 60 Hz",
       "camera": "13 MP",
-      "storage": "4 GB / 128 GB"
+      "storage": "4 GB / 128 GB · 96,000 MB free out of the box"
      },
      "details": [
       [
@@ -965,7 +988,8 @@
       "battery_h": 11.83,
       "free_gb": 96,
       "price": 19499
-     }
+     },
+     "look": "square"
     }
    ]
   }

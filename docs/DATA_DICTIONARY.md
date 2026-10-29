@@ -5,7 +5,23 @@
 The Excel download has a **Pilot** and a **Main** sheet with the same columns, one row per participant and shopping
 round, and an **About** sheet that explains every column (the list lives in `app/sheets.py`). Key columns:
 `site` (laptop that recorded the data), `participant`, `age`, `gender` (from the "About you" step), `round`, `condition`, `decision_time_s`, `correct`, `rank`,
-`switched`, pop-up counts, confidence, NASA-TLX, SAM, help ratings, trust, SUS, preference rank.
+`switched`, pop-up counts, confidence, NASA-TLX, SAM, help ratings, trust, SUS, preference rank, and the round's mouse
+summary (`app/mouse.py`): `mouse_points`, `mouse_path_px`, `mouse_moving_s`, `mouse_resting_s`, `mouse_speed_px_s`,
+`clicks`, `details_opened`, `card_switches` (sign B over the round), `longest_spec_rest_s` (F), `longest_empty_rest_s`
+(I), `scroll_events`, `scroll_flips` (S), `hover_by_phone`, `all_seen_s`, `score_peak`, `score_mean`, `threshold_used`,
+`time_over_threshold_s`.
+
+With **Include all mouse-movement data** ticked, three more sheets are added:
+
+- **Mouse signs**: one row per detector check (every 0.5 s) in each shopping round: `raw_B..raw_S` (the 5 signs over the
+  last 3 s), `z_B..z_S` (z-scores against the warm-up baseline), `score` (mean of the 5 z-scores), `over_threshold`,
+  `all_seen`.
+- **Mouse raw**: every logged event of every task, warm-ups included: `t_ms`, `type` (move / scroll / click), `x`, `y`,
+  `scroll_y`, `zone`, `clicked`. Continues on "Mouse raw 2", ... after 1,000,000 rows (Excel's limit is 1,048,576).
+- **Unsure marks**: the pilot replay marks, `start_s`, `end_s`, `length_s`.
+
+The Excel file is for reading results. Only the study-data CSV below can be uploaded: the Excel is a summary built from
+the data and cannot rebuild it.
 
 ## Study-data CSV (dashboard → Data & Excel → Download CSV / Upload CSV)
 

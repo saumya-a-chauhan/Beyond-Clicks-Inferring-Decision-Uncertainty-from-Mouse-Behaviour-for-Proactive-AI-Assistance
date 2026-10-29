@@ -55,7 +55,8 @@ explained: [docs/DETECTOR.md](docs/DETECTOR.md) and [docs/VALUES.md](docs/VALUES
 - Researcher dashboard: participants, pilot threshold sweep with charts, leave-one-out, freeze/unfreeze (audited),
   main results (yes-rates, AUC at random moments, speed, quality, questionnaires), ZIP export.
 - **Data & Excel tab:** download an Excel file with a **Pilot** and a **Main** sheet (one row per participant and round,
-  always up to date); **Download CSV** saves the complete study data in one file, and **Upload CSV** loads such a file
+  always up to date, with each round's mouse summary; optionally every cursor point and the detector's 0.5 s checks);
+  **Download CSV** saves the complete study data in one file, and **Upload CSV** loads such a file
   so every page, the pilot analysis, the freeze, the results and the figures run on that data.
 - **Data safety:** every save goes straight into `hti_study.db`; automatic backups in `backups/` (at start, every 15
   minutes while data changes, after each participant, at freeze, before deletes and CSV loads); full backup download.

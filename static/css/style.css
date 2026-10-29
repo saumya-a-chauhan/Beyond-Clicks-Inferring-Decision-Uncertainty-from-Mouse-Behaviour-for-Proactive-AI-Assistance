@@ -117,33 +117,30 @@ textarea { min-height: 90px; resize: vertical; }
 .reqcard .who { font-weight: 700; }
 .reqcard .what { font-size: 1.05rem; }
 .round-badge { display: inline-block; background: var(--brand-soft); color: var(--brand); font-weight: 700; border-radius: 99px; padding: 2px 12px; font-size: .85rem; margin-bottom: 6px; }
-.cards { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+.cards { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; align-items: start; }
 .card {
   background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow);
-  padding: 16px; display: flex; flex-direction: column; gap: 4px;
+  padding: 14px 16px 16px; display: flex; flex-direction: column; gap: 4px;
 }
-.card.selected { outline: 3px solid var(--brand); }
-.phone-img {
-  height: 92px; border-radius: 12px; margin-bottom: 8px; position: relative;
-  background: linear-gradient(140deg, var(--c1, #333), var(--c2, #777));
-}
-.phone-img::after { content: ""; position: absolute; left: 50%; top: 10px; width: 36px; height: 72px; transform: translateX(-50%);
-  border-radius: 8px; border: 3px solid rgba(255,255,255,.85); }
+.phone-pic { background: linear-gradient(180deg, #f4f6fb, #eaeef7); border-radius: 12px; padding: 10px 6px 4px; margin-bottom: 6px; }
+.phone-svg { display: block; width: 100%; height: 150px; }
 .card h3 { margin: 4px 0 0; font-size: 1.15rem; }
-.card .colours { font-size: .82rem; color: var(--muted); margin-bottom: 6px; }
+.card .colours { display: flex; align-items: center; gap: 6px; font-size: .8rem; color: var(--muted); }
+.card .swatches { display: inline-flex; gap: 3px; }
+.card .swatches i { width: 11px; height: 11px; border-radius: 50%; border: 1px solid rgba(0,0,0,.2); display: inline-block; }
+.card .price { font-size: 1.3rem; font-weight: 800; margin-top: 4px; }
+.card .teaser { font-size: .86rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.card.open .teaser { display: none; }
+.specs-full { display: none; margin-top: 4px; }
+.card.open .specs-full { display: block; }
 .spec { display: flex; flex-direction: column; padding: 7px 8px; border-radius: 8px; border-top: 1px solid var(--line); }
 .spec:hover { background: #f6f8ff; }
 .spec .k { font-size: .74rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
-.spec .v { font-size: .93rem; }
-.card .btns { display: flex; flex-direction: column; gap: 8px; margin-top: auto; padding-top: 10px; }  /* same button position on every card */
+.spec .v { font-size: .9rem; }
+.spec .v + .v { color: #39404d; }
+.card .btns { display: flex; flex-direction: column; gap: 8px; margin-top: auto; padding-top: 10px; }
 .card .btns button { justify-content: center; }
-.details {
-  margin-top: 16px; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px 22px;
-  box-shadow: var(--shadow); min-height: 120px;
-}
-.details table { border-collapse: collapse; margin: 8px 0 10px; }
-.details td { padding: 4px 18px 4px 0; }
-.details td:first-child { color: var(--muted); }
+.cmp tr.cmp-sec th { background: var(--brand-soft); color: var(--brand); }
 
 /* ---------- AI panel (pop-up and Ask AI) ---------- */
 .ai-panel {
