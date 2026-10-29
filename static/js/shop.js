@@ -13,33 +13,78 @@ function shade(hex, f) {
   return `rgb(${mix(n >> 16)},${mix((n >> 8) & 255)},${mix(n & 255)})`;
 }
 
-/* Product picture: the front (screen) and the back (colour and camera) of the phone. Drawn, not photographed:
-   every phone gets the same kind of picture, and the camera styles are counterbalanced across roles (phone_sets.json). */
+/* Product picture: the front (screen) and the back (colour and camera) of the phone. Every phone has its own design
+   (p.look in phone_sets.json: camera layout, body shape, finish, front-camera cutout, wallpaper). */
+const SHAPES = { round: [64, 128, 14], boxy: [66, 124, 5], slim: [56, 134, 12], curved: [62, 130, 20] };
+
 function phoneSvg(p) {
+  const L = p.look || {};
   const c = COLOURS[p.colours[0]] || "#555", c2 = COLOURS[p.colours[1]] || c, id = `ph-${p.id}`;
-  const mod = shade(c, -0.28), rim = "rgba(255,255,255,.35)";
-  const lens = (x, y, r) => `<circle cx="${x}" cy="${y}" r="${r}" fill="#15171c" stroke="#5a5f6b" stroke-width="1.2"/>
-    <circle cx="${x}" cy="${y}" r="${r * 0.45}" fill="#26324d"/><circle cx="${x - r * 0.3}" cy="${y - r * 0.3}" r="${r * 0.18}" fill="#cfd8ff" opacity=".8"/>`;
+  const [bw, bh, r] = SHAPES[L.shape] || SHAPES.round;
+  const bx = 136 - bw, by = 142 - bh, fx = 22, fy = by - 6;
+  const light = parseInt(c.slice(1, 3), 16) + parseInt(c.slice(3, 5), 16) + parseInt(c.slice(5, 7), 16) > 520;
+  const mod = shade(c, -0.3), rim = "rgba(255,255,255,.35)";
+  const lens = (x, y, rr) => `<circle cx="${x}" cy="${y}" r="${rr}" fill="#15171c" stroke="#5a5f6b" stroke-width="1.2"/>
+    <circle cx="${x}" cy="${y}" r="${rr * 0.45}" fill="#26324d"/><circle cx="${x - rr * 0.3}" cy="${y - rr * 0.3}" r="${rr * 0.18}" fill="#cfd8ff" opacity=".8"/>`;
   const flash = (x, y) => `<circle cx="${x}" cy="${y}" r="2.6" fill="#fff4d2" stroke="#d8c48a" stroke-width=".6"/>`;
+  const x = bx, y = by;
   const cams = {
-    square: `<rect x="77" y="22" width="30" height="30" rx="8" fill="${mod}" stroke="${rim}"/>${lens(85, 30, 5)}${lens(99, 30, 5)}${lens(85, 44, 5)}${flash(99, 44)}`,
-    pill: `<rect x="78" y="21" width="15" height="42" rx="7.5" fill="${mod}" stroke="${rim}"/>${lens(85.5, 29, 5)}${lens(85.5, 42, 5)}${lens(85.5, 55, 5)}${flash(99, 26)}`,
-    ring: `<circle cx="102" cy="40" r="17" fill="${mod}" stroke="${rim}"/>${lens(95, 34, 5.5)}${lens(109, 46, 5.5)}${lens(95, 47, 3.5)}${flash(109, 33)}`,
-    bar: `<rect x="74" y="23" width="56" height="18" rx="9" fill="${mod}" stroke="${rim}"/>${lens(84, 32, 5.5)}${lens(98, 32, 5.5)}${flash(117, 32)}`,
+    square: `<rect x="${x + 7}" y="${y + 8}" width="30" height="30" rx="8" fill="${mod}" stroke="${rim}"/>${lens(x + 15, y + 16, 5)}${lens(x + 29, y + 16, 5)}${lens(x + 15, y + 30, 5)}${flash(x + 29, y + 30)}`,
+    pill: `<rect x="${x + 8}" y="${y + 7}" width="15" height="42" rx="7.5" fill="${mod}" stroke="${rim}"/>${lens(x + 15.5, y + 15, 5)}${lens(x + 15.5, y + 28, 5)}${lens(x + 15.5, y + 41, 5)}${flash(x + 29, y + 12)}`,
+    ring: `<circle cx="${x + bw - 26}" cy="${y + 26}" r="17" fill="${mod}" stroke="${rim}"/>${lens(x + bw - 33, y + 20, 5.5)}${lens(x + bw - 19, y + 32, 5.5)}${lens(x + bw - 33, y + 33, 3.5)}${flash(x + bw - 19, y + 19)}`,
+    bar: `<rect x="${x + 5}" y="${y + 9}" width="${bw - 10}" height="18" rx="9" fill="${mod}" stroke="${rim}"/>${lens(x + 15, y + 18, 5.5)}${lens(x + 29, y + 18, 5.5)}${flash(x + bw - 14, y + 18)}`,
+    duo: `<circle cx="${x + 16}" cy="${y + 17}" r="9" fill="none" stroke="${shade(c, -0.4)}" stroke-width="2.5"/>${lens(x + 16, y + 17, 6.5)}
+      <circle cx="${x + 16}" cy="${y + 39}" r="9" fill="none" stroke="${shade(c, -0.4)}" stroke-width="2.5"/>${lens(x + 16, y + 39, 6.5)}${flash(x + 31, y + 14)}`,
+    center: `<circle cx="${x + bw / 2}" cy="${y + 30}" r="19" fill="${mod}" stroke="${rim}" stroke-width="1.5"/>${lens(x + bw / 2 - 7, y + 23, 4.8)}${lens(x + bw / 2 + 7, y + 23, 4.8)}${lens(x + bw / 2 - 7, y + 37, 4.8)}${lens(x + bw / 2 + 7, y + 37, 4.8)}${flash(x + bw / 2, y + 55)}`,
+    strip: `<rect x="${x + 5}" y="${y + 6}" width="19" height="60" rx="9.5" fill="rgba(10,12,18,.55)" stroke="${rim}"/>${lens(x + 14.5, y + 17, 6)}${lens(x + 14.5, y + 33, 6)}${lens(x + 14.5, y + 49, 4)}${flash(x + 14.5, y + 60)}`,
+    island: `<rect x="${x + 5}" y="${y + 6}" width="${bw - 10}" height="34" rx="11" fill="rgba(10,12,18,.42)" stroke="${rim}"/>${lens(x + 19, y + 23, 8.5)}${lens(x + 37, y + 16, 5)}${lens(x + 37, y + 30, 5)}${flash(x + bw - 15, y + 15)}`,
   };
+  const finishes = {
+    gloss: `<path d="M${x + 4} ${y + 6} Q${x + bw * 0.8} ${y + 4} ${x + bw - 4} ${y + bh * 0.45} L${x + bw - 4} ${y + 10} Z" fill="rgba(255,255,255,.22)"/>`,
+    matte: "",
+    twotone: `<rect x="${x}" y="${y}" width="${bw}" height="${bh * 0.36}" fill="${shade(c2 === c ? c : c2, -0.15)}" opacity=".9"/>`,
+    leather: `<rect x="${x + 4}" y="${y + 4}" width="${bw - 8}" height="${bh - 8}" rx="${Math.max(2, r - 4)}" fill="none" stroke="${shade(c, light ? -0.25 : 0.35)}" stroke-width=".9" stroke-dasharray="2.2 1.8"/>`,
+    stripe: `<rect x="${x + bw * 0.66}" y="${y}" width="7" height="${bh}" fill="${c2 === c ? shade(c, 0.35) : c2}" opacity=".85"/>`,
+  };
+  const bodyFill = L.finish === "matte" || L.finish === "leather"
+    ? `<stop offset="0" stop-color="${shade(c, 0.06)}"/><stop offset="1" stop-color="${shade(c, -0.1)}"/>`
+    : `<stop offset="0" stop-color="${shade(c, 0.25)}"/><stop offset="1" stop-color="${shade(c, -0.2)}"/>`;
+  const sx = fx + 3.5, sy = fy + 3.5, sw = bw - 7, sh = bh - 7, sr = Math.max(2, r - 3);
+  const walls = [
+    "",
+    `<path d="M${sx} ${sy + sh * 0.55} Q${sx + sw * 0.3} ${sy + sh * 0.42} ${sx + sw * 0.6} ${sy + sh * 0.56} T${sx + sw} ${sy + sh * 0.5} L${sx + sw} ${sy + sh} L${sx} ${sy + sh} Z" fill="${shade(c2, 0.2)}" opacity=".55"/>
+     <path d="M${sx} ${sy + sh * 0.72} Q${sx + sw * 0.4} ${sy + sh * 0.6} ${sx + sw} ${sy + sh * 0.74} L${sx + sw} ${sy + sh} L${sx} ${sy + sh} Z" fill="${shade(c, 0.1)}" opacity=".6"/>`,
+    `<circle cx="${sx + sw * 0.3}" cy="${sy + sh * 0.35}" r="${sw * 0.45}" fill="${shade(c2, 0.25)}" opacity=".55"/>
+     <circle cx="${sx + sw * 0.8}" cy="${sy + sh * 0.7}" r="${sw * 0.38}" fill="${shade(c, 0.2)}" opacity=".55"/>`,
+    `<path d="M${sx} ${sy + sh * 0.2} L${sx + sw} ${sy + sh * 0.05} L${sx + sw} ${sy + sh * 0.35} L${sx} ${sy + sh * 0.6} Z" fill="rgba(255,255,255,.18)"/>`,
+  ];
+  const cx = L.notch === "left" ? sx + 9 : fx + bw / 2;
+  const notch = {
+    center: `<circle cx="${cx}" cy="${sy + 6}" r="2.3" fill="#05060a"/>`,
+    left: `<circle cx="${cx}" cy="${sy + 6}" r="2.3" fill="#05060a"/>`,
+    drop: `<path d="M${cx - 7} ${sy} Q${cx - 3} ${sy} ${cx - 3} ${sy + 4} A3 3 0 0 0 ${cx + 3} ${sy + 4} Q${cx + 3} ${sy} ${cx + 7} ${sy} Z" fill="#05060a"/>`,
+    island: `<rect x="${cx - 9}" y="${sy + 3.5}" width="18" height="5.5" rx="2.75" fill="#05060a"/>`,
+  }[L.notch || "center"];
+  const mark = `<text x="${x + bw / 2}" y="${y + bh - 14}" text-anchor="middle" font-size="6.5" font-weight="700" letter-spacing="1"
+    fill="${light ? "rgba(0,0,0,.35)" : "rgba(255,255,255,.55)"}">${esc(p.name.split(" ")[0].toUpperCase())}</text>`;
   return `<svg class="phone-svg" viewBox="0 0 160 150" role="img" aria-label="${esc(p.name)}">
     <defs>
-      <linearGradient id="${id}-b" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${shade(c, 0.22)}"/><stop offset="1" stop-color="${shade(c, -0.18)}"/></linearGradient>
-      <linearGradient id="${id}-s" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${shade(c2, 0.1)}"/><stop offset=".55" stop-color="${shade(c, -0.1)}"/><stop offset="1" stop-color="#0d1020"/></linearGradient>
+      <linearGradient id="${id}-b" x1="0" y1="0" x2="1" y2="1">${bodyFill}</linearGradient>
+      <linearGradient id="${id}-s" x1="0" y1="0" x2="${L.wallpaper === 3 ? 0 : 1}" y2="1"><stop offset="0" stop-color="${shade(c2, 0.1)}"/><stop offset=".55" stop-color="${shade(c, -0.1)}"/><stop offset="1" stop-color="#0d1020"/></linearGradient>
+      <clipPath id="${id}-sc"><rect x="${sx}" y="${sy}" width="${sw}" height="${sh}" rx="${sr}"/></clipPath>
+      <clipPath id="${id}-bc"><rect x="${x}" y="${y}" width="${bw}" height="${bh}" rx="${r}"/></clipPath>
     </defs>
-    <ellipse cx="82" cy="143" rx="58" ry="4" fill="rgba(0,0,0,.10)"/>
-    <rect x="24" y="8" width="62" height="130" rx="12" fill="#14161b"/>
-    <rect x="27.5" y="11.5" width="55" height="123" rx="9" fill="url(#${id}-s)"/>
-    <circle cx="55" cy="18" r="2.3" fill="#05060a"/>
-    <path d="M30 70 Q55 52 80 66 L80 120 Q55 108 30 124 Z" fill="rgba(255,255,255,.08)"/>
-    <rect x="70" y="14" width="64" height="130" rx="13" fill="url(#${id}-b)" stroke="rgba(0,0,0,.18)"/>
-    <path d="M74 20 Q120 18 128 60 L128 26 Q127 18 118 18 Z" fill="rgba(255,255,255,.18)"/>
-    ${cams[p.look] || cams.square}
+    <ellipse cx="80" cy="145" rx="60" ry="3.5" fill="rgba(0,0,0,.10)"/>
+    <rect x="${fx}" y="${fy}" width="${bw}" height="${bh}" rx="${r}" fill="#14161b"/>
+    <g clip-path="url(#${id}-sc)"><rect x="${sx}" y="${sy}" width="${sw}" height="${sh}" fill="url(#${id}-s)"/>${walls[L.wallpaper || 0]}</g>
+    ${notch}
+    ${L.shape === "curved" ? `<rect x="${fx + 1}" y="${fy + 14}" width="2" height="${bh - 28}" rx="1" fill="rgba(255,255,255,.25)"/>` : ""}
+    <rect x="${x}" y="${y}" width="${bw}" height="${bh}" rx="${r}" fill="url(#${id}-b)"/>
+    <g clip-path="url(#${id}-bc)">${finishes[L.finish] || ""}</g>
+    <rect x="${x}" y="${y}" width="${bw}" height="${bh}" rx="${r}" fill="none" stroke="rgba(0,0,0,.18)"/>
+    ${L.shape === "curved" ? `<rect x="${x + bw - 3}" y="${y + 14}" width="2" height="${bh - 28}" rx="1" fill="rgba(255,255,255,.3)"/>` : ""}
+    ${cams[L.camera] || cams.square}
+    ${mark}
   </svg>`;
 }
 

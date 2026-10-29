@@ -1,5 +1,5 @@
 {
- "_note": "Fictional phones. No summary scores are shown: only spec-sheet terms and lab measurements, written in mixed units on purpose (minutes vs hours, GB vs TB vs MB, millions vs lakhs; lower lux and lower f-numbers are better; a larger sensor has a smaller second number). Each main set has 1 correct phone (rank 1), 1 main trap (rank 2), 1 second trap (rank 3) and 1 dominated phone (rank 4). The correct phone is the best phone within budget on the card's Priority 1, decided by the lab measurement in '_truth' (hidden from the browser). The main trap is better on Priority 2 and has flashier headline specs, so it is a real trade-off. The second trap is over budget. The dominated phone is worse than the correct phone on every measured value and costs the same or more. tests/test_phone_sets.py checks all of this. Card positions are shuffled per participant. Shopping screen: each card shows a picture, the colours, the price and the start of the specs; 'View details' opens the full spec rows, which include the measured values (in mixed units). The 'details' and 'review' entries are shown only on the 'change your choice?' screen after the round. Picture styles ('look') are counterbalanced so each role gets each style once across S1-S4.",
+ "_note": "Fictional phones. No summary scores are shown: only spec-sheet terms and lab measurements, written in mixed units on purpose (minutes vs hours, GB vs TB vs MB, millions vs lakhs; lower lux and lower f-numbers are better; a larger sensor has a smaller second number). Each main set has 1 correct phone (rank 1), 1 main trap (rank 2), 1 second trap (rank 3) and 1 dominated phone (rank 4). The correct phone is the best phone within budget on the card's Priority 1, decided by the lab measurement in '_truth' (hidden from the browser). The main trap is better on Priority 2 and has flashier headline specs, so it is a real trade-off. The second trap is over budget. The dominated phone is worse than the correct phone on every measured value and costs the same or more. tests/test_phone_sets.py checks all of this. Card positions are shuffled per participant. Shopping screen: each card shows a picture, the colours, the price and the start of the specs; 'View details' opens the full spec rows, which include the measured values (in mixed units). The 'details' and 'review' entries are shown only on the 'change your choice?' screen after the round. Every phone has its own design ('look': camera layout, body shape, finish, cutout, wallpaper), assigned by a fixed rotation over the order in this file, not chosen by role.",
  "spec_labels": {
   "price": "Price",
   "battery": "Battery",
@@ -46,7 +46,13 @@
       ]
      ],
      "review": "A plain everyday phone. Fine for calls, chat and video.",
-     "look": "square"
+     "look": {
+      "camera": "square",
+      "shape": "round",
+      "finish": "gloss",
+      "notch": "center",
+      "wallpaper": 0
+     }
     },
     {
      "id": "P2",
@@ -74,7 +80,13 @@
       ]
      ],
      "review": "Light, with a smooth 120 Hz screen.",
-     "look": "pill"
+     "look": {
+      "camera": "bar",
+      "shape": "boxy",
+      "finish": "twotone",
+      "notch": "left",
+      "wallpaper": 3
+     }
     },
     {
      "id": "P3",
@@ -102,7 +114,13 @@
       ]
      ],
      "review": "Huge storage for photos and videos.",
-     "look": "ring"
+     "look": {
+      "camera": "strip",
+      "shape": "slim",
+      "finish": "stripe",
+      "notch": "drop",
+      "wallpaper": 2
+     }
     },
     {
      "id": "P4",
@@ -130,7 +148,13 @@
       ]
      ],
      "review": "The cheapest option here. Basic but works.",
-     "look": "bar"
+     "look": {
+      "camera": "pill",
+      "shape": "curved",
+      "finish": "matte",
+      "notch": "island",
+      "wallpaper": 1
+     }
     }
    ],
    "answers": {
@@ -189,7 +213,13 @@
       "antutu": 820000,
       "price": 24999
      },
-     "look": "square"
+     "look": {
+      "camera": "duo",
+      "shape": "curved",
+      "finish": "matte",
+      "notch": "left",
+      "wallpaper": 1
+     }
     },
     {
      "id": "S1B",
@@ -229,7 +259,13 @@
       "antutu": 530000,
       "price": 23499
      },
-     "look": "pill"
+     "look": {
+      "camera": "island",
+      "shape": "round",
+      "finish": "leather",
+      "notch": "drop",
+      "wallpaper": 0
+     }
     },
     {
      "id": "S1C",
@@ -269,7 +305,13 @@
       "antutu": 1210000,
       "price": 25999
      },
-     "look": "ring"
+     "look": {
+      "camera": "ring",
+      "shape": "boxy",
+      "finish": "gloss",
+      "notch": "island",
+      "wallpaper": 3
+     }
     },
     {
      "id": "S1D",
@@ -309,7 +351,13 @@
       "antutu": 410000,
       "price": 24999
      },
-     "look": "bar"
+     "look": {
+      "camera": "center",
+      "shape": "slim",
+      "finish": "twotone",
+      "notch": "center",
+      "wallpaper": 2
+     }
     }
    ]
   },
@@ -363,7 +411,13 @@
       "battery_h": 12.5,
       "price": 29499
      },
-     "look": "pill"
+     "look": {
+      "camera": "square",
+      "shape": "slim",
+      "finish": "twotone",
+      "notch": "drop",
+      "wallpaper": 2
+     }
     },
     {
      "id": "S2B",
@@ -403,7 +457,13 @@
       "battery_h": 12.33,
       "price": 27999
      },
-     "look": "ring"
+     "look": {
+      "camera": "bar",
+      "shape": "curved",
+      "finish": "stripe",
+      "notch": "island",
+      "wallpaper": 1
+     }
     },
     {
      "id": "S2C",
@@ -443,7 +503,13 @@
       "battery_h": 11.1,
       "price": 31999
      },
-     "look": "bar"
+     "look": {
+      "camera": "strip",
+      "shape": "round",
+      "finish": "matte",
+      "notch": "center",
+      "wallpaper": 0
+     }
     },
     {
      "id": "S2D",
@@ -483,7 +549,13 @@
       "battery_h": 10.33,
       "price": 29999
      },
-     "look": "square"
+     "look": {
+      "camera": "pill",
+      "shape": "boxy",
+      "finish": "leather",
+      "notch": "left",
+      "wallpaper": 3
+     }
     }
    ]
   },
@@ -538,7 +610,13 @@
       "battery_h": 12.4,
       "price": 21999
      },
-     "look": "ring"
+     "look": {
+      "camera": "duo",
+      "shape": "boxy",
+      "finish": "leather",
+      "notch": "island",
+      "wallpaper": 3
+     }
     },
     {
      "id": "S3B",
@@ -579,7 +657,13 @@
       "battery_h": 11.83,
       "price": 20999
      },
-     "look": "bar"
+     "look": {
+      "camera": "island",
+      "shape": "slim",
+      "finish": "gloss",
+      "notch": "center",
+      "wallpaper": 2
+     }
     },
     {
      "id": "S3C",
@@ -620,7 +704,13 @@
       "battery_h": 12.67,
       "price": 23499
      },
-     "look": "square"
+     "look": {
+      "camera": "ring",
+      "shape": "curved",
+      "finish": "twotone",
+      "notch": "left",
+      "wallpaper": 1
+     }
     },
     {
      "id": "S3D",
@@ -661,7 +751,13 @@
       "battery_h": 10.6,
       "price": 21999
      },
-     "look": "pill"
+     "look": {
+      "camera": "center",
+      "shape": "round",
+      "finish": "stripe",
+      "notch": "drop",
+      "wallpaper": 0
+     }
     }
    ]
   },
@@ -715,7 +811,13 @@
       "gaming_battery_h": 5.83,
       "price": 27999
      },
-     "look": "bar"
+     "look": {
+      "camera": "square",
+      "shape": "round",
+      "finish": "stripe",
+      "notch": "center",
+      "wallpaper": 0
+     }
     },
     {
      "id": "S4B",
@@ -755,7 +857,13 @@
       "gaming_battery_h": 6.67,
       "price": 26999
      },
-     "look": "square"
+     "look": {
+      "camera": "bar",
+      "shape": "boxy",
+      "finish": "matte",
+      "notch": "left",
+      "wallpaper": 3
+     }
     },
     {
      "id": "S4C",
@@ -795,7 +903,13 @@
       "gaming_battery_h": 6.1,
       "price": 29999
      },
-     "look": "pill"
+     "look": {
+      "camera": "strip",
+      "shape": "slim",
+      "finish": "leather",
+      "notch": "drop",
+      "wallpaper": 2
+     }
     },
     {
      "id": "S4D",
@@ -835,7 +949,13 @@
       "gaming_battery_h": 4.8,
       "price": 27999
      },
-     "look": "ring"
+     "look": {
+      "camera": "pill",
+      "shape": "curved",
+      "finish": "gloss",
+      "notch": "island",
+      "wallpaper": 1
+     }
     }
    ]
   },
@@ -884,7 +1004,13 @@
       "free_gb": 104,
       "price": 19499
      },
-     "look": "pill"
+     "look": {
+      "camera": "duo",
+      "shape": "curved",
+      "finish": "gloss",
+      "notch": "left",
+      "wallpaper": 1
+     }
     },
     {
      "id": "S5B",
@@ -919,7 +1045,13 @@
       "free_gb": 230,
       "price": 18999
      },
-     "look": "ring"
+     "look": {
+      "camera": "island",
+      "shape": "round",
+      "finish": "twotone",
+      "notch": "drop",
+      "wallpaper": 0
+     }
     },
     {
      "id": "S5C",
@@ -954,7 +1086,13 @@
       "free_gb": 230,
       "price": 20999
      },
-     "look": "bar"
+     "look": {
+      "camera": "ring",
+      "shape": "boxy",
+      "finish": "stripe",
+      "notch": "island",
+      "wallpaper": 3
+     }
     },
     {
      "id": "S5D",
@@ -989,7 +1127,13 @@
       "free_gb": 96,
       "price": 19499
      },
-     "look": "square"
+     "look": {
+      "camera": "center",
+      "shape": "slim",
+      "finish": "matte",
+      "notch": "center",
+      "wallpaper": 2
+     }
     }
    ]
   }

@@ -73,10 +73,13 @@ def test_measured_values_are_in_the_specs():
                 assert value in text, (sid, p["id"], value)
 
 
-def test_picture_styles_counterbalanced():
-    looks = {}
-    for sid in ("S1", "S2", "S3", "S4"):
-        for p in catalog()["sets"][sid]["phones"]:
-            looks.setdefault(p["role"], []).append(p["look"])
-    for role, ls in looks.items():
-        assert sorted(ls) == ["bar", "pill", "ring", "square"], (role, ls)
+def test_every_phone_has_its_own_design():
+    keys = ("camera", "shape", "finish", "notch", "wallpaper")
+    designs = []
+    for sid, s in catalog()["sets"].items():
+        looks = [p["look"] for p in s["phones"]]
+        assert all(set(lk) == set(keys) for lk in looks), sid
+        for k in ("camera", "shape", "finish", "notch", "wallpaper"):
+            assert len({lk[k] for lk in looks}) == len(looks), (sid, k)      # within a set, every part differs
+        designs += [tuple(lk[k] for k in keys) for lk in looks]
+    assert len(set(designs)) == len(designs)                                 # no two phones look the same
