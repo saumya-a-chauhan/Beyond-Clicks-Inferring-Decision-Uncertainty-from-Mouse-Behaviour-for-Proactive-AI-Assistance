@@ -1,46 +1,39 @@
 # Data dictionary
 
-## Results sheet (dashboard → Data & Excel)
+## Overview CSV (dashboard → Data (CSV) → Download overview CSV)
 
-The Excel download has a **Pilot** and a **Main** sheet with the same columns, one row per participant and shopping
-round, and an **About** sheet that explains every column (the list lives in `app/sheets.py`). Key columns:
-`site` (laptop that recorded the data), `participant`, `age`, `gender` (from the "About you" step), `round`, `condition`, `decision_time_s`, `correct`, `rank`,
-`switched`, pop-up counts, confidence, NASA-TLX, SAM, help ratings, trust, SUS, preference rank, and the round's mouse
-summary (`app/mouse.py`): `mouse_points`, `mouse_path_px`, `mouse_moving_s`, `mouse_resting_s`, `mouse_speed_px_s`,
-`clicks`, `details_opened`, `card_switches` (sign B over the round), `longest_spec_rest_s` (F), `longest_empty_rest_s`
-(I), `scroll_events`, `scroll_flips` (S), `hover_by_phone`, `all_seen_s`, `score_peak`, `score_mean`, `threshold_used`,
-`time_over_threshold_s`.
+One row per participant and shopping round, pilot rows first, then main, each sorted by participant and round (built
+by `app/sheets.py`; the dashboard's "View data" shows the same columns and their meanings on hover). Key columns:
+`site` (laptop that recorded the data), `participant`, `age`, `gender` (from the "About you" step), `round`,
+`condition`, `decision_time_s`, `correct`, `rank`, `switched`, pop-up counts, confidence, NASA-TLX, SAM, help ratings,
+trust, SUS, preference rank, and the round's mouse summary (`app/mouse.py`): `mouse_points`, `mouse_path_px`,
+`mouse_moving_s`, `mouse_resting_s`, `mouse_speed_px_s`, `clicks`, `details_opened`, `card_switches` (sign B over the
+round), `longest_spec_rest_s` (F), `longest_empty_rest_s` (I), `scroll_events`, `scroll_flips` (S), `hover_by_phone`,
+`all_seen_s`, `score_peak`, `score_mean`, `threshold_used`, `time_over_threshold_s`. It is computed from the data, so it
+is never uploaded.
 
-With **Include all mouse-movement data** ticked, three more sheets are added:
+## Pilot CSV and Main CSV (dashboard → Data (CSV) → Download / Upload)
 
-- **Mouse signs**: one row per detector check (every 0.5 s) in each shopping round: `raw_B..raw_S` (the 5 signs over the
-  last 3 s), `z_B..z_S` (z-scores against the warm-up baseline), `score` (mean of the 5 z-scores), `over_threshold`,
-  `all_seen`.
-- **Mouse raw**: every logged event of every task, warm-ups included: `t_ms`, `type` (move / scroll / click), `x`, `y`,
-  `scroll_y`, `zone`, `clicked`. Continues on "Mouse raw 2", ... after 1,000,000 rows (Excel's limit is 1,048,576).
-- **Unsure marks**: the pilot replay marks, `start_s`, `end_s`, `length_s`.
+One file per study (`app/datacsv.py`, format version 3) with everything recorded for that study's participants; the
+pilot file also holds the pilot settings (detector settings, pilot analysis, freeze, assignment) and the audit log.
+Lines are sorted by participant, then task (warm-ups, practice, rounds), then time. Columns:
 
-The Excel file is for reading results. Only the study-data CSV below can be uploaded: the Excel is a summary built from
-the data and cannot rebuild it.
+- `table`, `participant`, `study`, `task_key`, `round`: on every line. `table` is `_meta` (first line: format, study,
+  source laptop, row counts), `settings`, `participants`, `tasks`, `popups`, `ai_requests`, `labels`, `responses`,
+  `audit`, or `mouse`.
+- Mouse lines (`table` = `mouse`), one per logged event: `t_ms` (ms since the task started), `type` (move, scroll,
+  click), `x`, `y` (cursor position in the window, px), `scroll_y` (page scroll, px), `zone` (what was under the cursor:
+  card:<phone>, spec:<phone>:<spec>, read:card, empty, ui:...), `clicked` (button clicked, e.g. details:S1A, buy:S1A),
+  `key` (`<task id>/<batch>`, used to rebuild the data on upload). Moves are logged about 60 times per second while the
+  mouse moves; `task_key` is baseline1, baseline2, practice, t1-t4 or ai.
+- Other lines: `key` (row id), `part`/`parts` and `data` = one database row as JSON (dates `{"$dt": iso}`, binary data
+  such as detector ticks `{"$b64": base64}`); rows longer than 30,000 characters continue on the next lines.
 
-## Study-data CSV (dashboard → Data & Excel → Download CSV / Upload CSV)
-
-The complete database in one file (`app/datacsv.py`, format version 2): columns `table`, `key`, `part`, `parts`,
-`data`, then the mouse columns. Each line with a table name (participants, tasks, popups, ai_requests, labels,
-responses, settings, audit) is one database row as JSON in `data`; dates are `{"$dt": iso}`, binary data (detector
-ticks) is `{"$b64": base64}`. Rows longer than 30,000 characters are split over several lines (`part` of `parts`).
-
-**Mouse movement** is written readably, one line per logged event, with `table` = `mouse` and these columns:
-`key` (`<task id>/<batch>`, used to rebuild the data on upload), `participant`, `study`, `task_key` (baseline1,
-baseline2, practice, t1-t4, ai), `round`, `t_ms` (ms since the task started), `type` (move, scroll, click), `x`, `y`
-(cursor position in the window, px), `scroll_y` (page scroll, px), `zone` (what was under the cursor: card:<phone>,
-spec:<phone>:<spec>, read:card, empty, ui:...), `clicked` (button clicked, e.g. details:S1A, buy:S1A). Moves are logged
-about 60 times per second while the mouse moves. Version 1 files (mouse data packed in `event_batches` rows) still
-load. The `_meta` line holds the format version, the
-source laptop and the number of rows per table; a file whose counts do not match (cut off or edited) is refused before
-anything changes. Session tokens are never exported; the laptop name (`site_name` setting) stays with each laptop.
-Loading a file **overrides** all study data on the receiving laptop: the database then holds exactly the file's data
-(a backup is made first), so every page and analysis uses only it, and the dashboard says "Data overridden".
+Uploading a file **overrides** that study's data on the receiving laptop (pilot: participants, pilot settings, freeze
+and audit log; main: participants and the main assignment); the other study is not touched, the laptop name and consent
+text stay, a backup is made first, database ids are renumbered (so files from different laptops never collide) and
+session tokens are new. A file is refused, with nothing changed, if it is an Excel file, the other study's file, not
+UTF-8 (re-saved in Excel), from an older version, or if its row counts do not match (cut off or edited).
 
 ## Raw data ZIP
 

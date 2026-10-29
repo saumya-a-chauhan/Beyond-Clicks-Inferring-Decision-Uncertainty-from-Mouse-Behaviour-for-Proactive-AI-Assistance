@@ -836,7 +836,7 @@ def admin_export():
                              headers={"Content-Disposition": "attachment; filename=hti_study_export.zip"})
 
 
-# ---------------------------------------------------------------- results sheet (Excel), study-data CSV, backups
+# ---------------------------------------------------------------- overview, pilot / main CSVs, backups
 def _flag(v):
     return str(v).lower() in ("1", "true", "yes", "on")
 
@@ -846,36 +846,41 @@ def admin_sheet(study: str = "pilot", include_sim: str = "0"):
     if study not in sheets.STUDIES:
         raise HTTPException(400, "Unknown study")
     return {"columns": sheets.display_columns(), "rows": sheets.local_rows(study, _flag(include_sim)),
-            "meanings": dict(sheets.COLUMNS), "loaded": db.get_setting("loaded_data")}
+            "meanings": dict(sheets.COLUMNS), "loaded": sheets.loaded_info(study)}
 
 
-@app.get("/api/admin/export.xlsx", dependencies=[Depends(auth.require_admin)])
-def admin_export_xlsx(include_sim: str = "0", include_mouse: str = "0"):
-    data = sheets.to_xlsx(_flag(include_sim), _flag(include_mouse))
-    name = f"beyond_clicks_results_{datetime.now():%Y%m%d_%H%M}.xlsx"
-    return Response(data, media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                    headers={"Content-Disposition": f'attachment; filename="{name}"'})
+def _csv_response(data, name):
+    return Response(data, media_type="text/csv; charset=utf-8",
+                    headers={"Content-Disposition": f'attachment; filename="{name.replace(" ", "_")}"'})
+
+
+@app.get("/api/admin/overview.csv", dependencies=[Depends(auth.require_admin)])
+def admin_overview_csv(include_sim: str = "0"):
+    return _csv_response(sheets.overview_csv(_flag(include_sim)),
+                         f"beyond_clicks_overview_{datetime.now():%Y%m%d_%H%M}.csv")
 
 
 @app.get("/api/admin/data.csv", dependencies=[Depends(auth.require_admin)])
-def admin_data_csv():
-    data = datacsv.export_csv(sheets.site_name())
-    name = f"beyond_clicks_study_data_{sheets.site_name()}_{datetime.now():%Y%m%d_%H%M}.csv".replace(" ", "_")
-    return Response(data, media_type="text/csv; charset=utf-8",
-                    headers={"Content-Disposition": f'attachment; filename="{name}"'})
+def admin_data_csv(study: str):
+    if study not in datacsv.STUDIES:
+        raise HTTPException(400, "Unknown study")
+    site = sheets.site_name()
+    return _csv_response(datacsv.export_csv(site, study), f"beyond_clicks_{study}_{site}_{datetime.now():%Y%m%d_%H%M}.csv")
 
 
 @app.post("/api/admin/data.csv", dependencies=[Depends(auth.require_admin)])
-async def admin_load_data_csv(request: Request, filename: str = "study_data.csv"):
+async def admin_load_data_csv(request: Request, study: str, filename: str = "study_data.csv"):
+    if study not in datacsv.STUDIES:
+        raise HTTPException(400, "Unknown study")
     content = await request.body()
     if not content:
         raise HTTPException(400, "The file is empty.")
     try:
-        datacsv._parse(content)                 # check the whole file before touching anything
-    except (ValueError, UnicodeDecodeError) as e:
-        raise HTTPException(400, str(e) if isinstance(e, ValueError) else "The file is not a UTF-8 CSV.") from e
-    backup.make_backup("before_csv_load")
-    return datacsv.load_csv(content, Path(filename).name)
+        datacsv.check(content, study)            # read the whole file before touching anything
+    except ValueError as e:
+        raise HTTPException(400, str(e)) from e
+    backup.make_backup(f"before_{study}_csv_load")
+    return datacsv.load_csv(content, Path(filename).name, study)
 
 
 @app.get("/api/admin/backups", dependencies=[Depends(auth.require_admin)])

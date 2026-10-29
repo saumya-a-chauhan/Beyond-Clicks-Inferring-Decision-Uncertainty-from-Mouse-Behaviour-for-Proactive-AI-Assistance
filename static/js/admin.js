@@ -156,26 +156,27 @@ const TABS = {
   async data() {
     clearCharts();
     view.innerHTML = `
-      <div class="panel"><h2>Results (Excel)</h2>
-        <p>One row per participant and shopping round: a <b>Pilot</b> sheet, a <b>Main</b> sheet, and an <b>About</b> sheet explaining every column.
-        Each row also has the round's mouse numbers (distance, resting time, switches between phones, longest rests, scroll flips, time on each phone, hesitation score).
-        It is built from the current data each time, so every participant so far is included.</p>
-        <label class="check"><input type="checkbox" id="dl-mouse"> Include all mouse-movement data: every cursor point, scroll and click (<b>Mouse raw</b>), the detector's check every 0.5 s with the 5 signs and the score (<b>Mouse signs</b>), and the replay's unsure marks. Large file, takes longer.</label>
-        <label class="check"><input type="checkbox" id="dl-sim"> Include simulated (test) participants</label>
-        <div class="actions" style="justify-content:flex-start">
-          <button class="primary" id="dl-xlsx">Download Excel (Pilot + Main)</button></div>
-        <div id="dl-out"></div></div>
-      <div class="panel"><h2>Study data (CSV)</h2>
-        <p><b>Download CSV</b> saves everything recorded in this study in one file: every participant and round, the answers, the pop-ups, the replay labels, the settings (including the freeze) and <b>every mouse event</b> of every participant (warm-ups, practice, pilot and main rounds).
-        The mouse rows are readable: one line per event with <code>table = mouse</code> and the columns participant, study, task_key, round, t_ms, type (move / scroll / click), x, y, scroll_y, zone and clicked.</p>
-        <p><b>Upload CSV</b> loads such a file, for example the one from the laptop that ran the experiment. It <b>overrides all study data on this laptop</b>: after loading, every page of this dashboard uses only the data from the file
-        (participants, the pilot analysis and freeze, the main-study results, the Excel download) and so does <code>analysis/make_figures.py</code>.</p>
-        <p class="small muted">Upload the CSV exactly as it was downloaded; do not open and save it in Excel first. A backup is saved automatically before loading (Backups &amp; tools).</p>
+      <div class="panel"><h2>Download</h2>
+        <p>Three CSV files, each sorted by participant and round:</p>
+        <table class="data"><tr><th>File</th><th>What is in it</th><th>Use it for</th></tr>
+          <tr><td><b>Pilot CSV</b></td><td>Everything recorded for every pilot participant: rounds, answers, replay "unsure" marks, AI round, and <b>every mouse event</b> (one line per move, scroll and click). Also the pilot analysis and the freeze.</td><td>Sending the pilot data to another laptop (upload it there).</td></tr>
+          <tr><td><b>Main CSV</b></td><td>The same for every main-study participant: rounds, answers, pop-ups, AI answers and every mouse event.</td><td>Sending the main-study data to another laptop.</td></tr>
+          <tr><td><b>Overview CSV</b></td><td>The results: one row per participant and round (pilot rows first, then main), with age, gender, condition, time, correct, pop-ups, questionnaires and the round's mouse summary. Same columns as "View data" below.</td><td>Reading and analysing results (opens fine in Excel). It is made from the data, so it is never uploaded.</td></tr></table>
+        <p class="small muted">In the Pilot and Main CSVs, mouse lines have <code>table = mouse</code> and the columns participant, study, task_key, round, t_ms, type (move / scroll / click), x, y, scroll_y, zone, clicked. The other lines hold the database rows (in the <code>data</code> column) that an upload needs.</p>
         <div class="actions" style="justify-content:flex-start;flex-wrap:wrap">
-          <button class="primary" id="csv-dl">Download CSV</button>
-          <input type="file" id="csv-file" accept=".csv" style="max-width:320px">
-          <button id="csv-up">Upload CSV</button></div>
-        <div id="csv-out"></div></div>
+          <button class="primary" id="dl-pilot">Download pilot CSV</button>
+          <button class="primary" id="dl-main">Download main CSV</button>
+          <button id="dl-over">Download overview CSV</button>
+          <label class="check" style="margin:0"><input type="checkbox" id="dl-sim"> Include simulated (test) participants in the overview</label></div>
+        <div id="dl-out"></div></div>
+      <div class="panel"><h2>Upload</h2>
+        <p>Upload the Pilot CSV or the Main CSV from the laptop that ran the experiment. An upload <b>overrides</b> this laptop's data <b>for that study only</b>:
+        uploading the Pilot CSV replaces all pilot participants, the pilot analysis and the freeze; uploading the Main CSV replaces all main-study participants. Then every page here uses the uploaded data
+        (Participants, Pilot analysis &amp; freeze, Main study results, View data, the Overview CSV and <code>analysis/make_figures.py</code>).</p>
+        <p class="small muted">Upload the files exactly as they were downloaded: do not open and save them in Excel first. A backup of the current data is saved automatically before each upload (Backups &amp; tools). Never upload on the laptop that runs the experiment.</p>
+        <div class="up-row"><b>Pilot CSV</b><input type="file" id="up-pilot-file" accept=".csv"><button id="up-pilot">Upload pilot CSV</button></div>
+        <div class="up-row"><b>Main CSV</b><input type="file" id="up-main-file" accept=".csv"><button id="up-main">Upload main CSV</button></div>
+        <div id="up-out"></div></div>
       <div class="panel"><h2>View data</h2>
         <div class="actions" style="justify-content:flex-start;flex-wrap:wrap;gap:8px">
           <button id="v-pilot" class="primary">Pilot</button><button id="v-main">Main</button>
@@ -229,30 +230,34 @@ const TABS = {
     view.querySelector("#v-pilot").onclick = () => { study = "pilot"; load(); };
     view.querySelector("#v-main").onclick = () => { study = "main"; load(); };
     view.querySelector("#v-all").onchange = render;
-    view.querySelector("#dl-xlsx").onclick = e => downloadFile(`/api/admin/export.xlsx?${simQ()}&include_mouse=${view.querySelector("#dl-mouse").checked ? 1 : 0}`, "beyond_clicks_results.xlsx", e.target, view.querySelector("#dl-out"));
-    view.querySelector("#csv-dl").onclick = e => downloadFile("/api/admin/data.csv", "beyond_clicks_study_data.csv", e.target, view.querySelector("#csv-out"));
-    view.querySelector("#csv-up").onclick = async e => {
-      const f = view.querySelector("#csv-file").files[0];
-      const out = view.querySelector("#csv-out");
-      if (!f) { out.innerHTML = '<p class="notice">Choose the CSV file first.</p>'; return; }
-      if (!confirm(`Upload "${f.name}"?\n\nAll study data on this laptop will be OVERRIDDEN by the data in this file (participants, results, pilot analysis, freeze). A backup of the current data is saved first.`)) return;
-      const btn = e.target; btn.disabled = true;
+    const dlOut = view.querySelector("#dl-out");
+    view.querySelector("#dl-pilot").onclick = e => downloadFile("/api/admin/data.csv?study=pilot", "beyond_clicks_pilot.csv", e.target, dlOut);
+    view.querySelector("#dl-main").onclick = e => downloadFile("/api/admin/data.csv?study=main", "beyond_clicks_main.csv", e.target, dlOut);
+    view.querySelector("#dl-over").onclick = e => downloadFile(`/api/admin/overview.csv?${simQ()}`, "beyond_clicks_overview.csv", e.target, dlOut);
+    const upload = async (which, btn) => {
+      const f = view.querySelector(`#up-${which}-file`).files[0];
+      const out = view.querySelector("#up-out");
+      const name = which === "pilot" ? "pilot" : "main-study";
+      if (!f) { out.innerHTML = `<p class="notice">Choose the ${which} CSV file first.</p>`; return; }
+      if (!confirm(`Upload "${f.name}" as the ${which.toUpperCase()} data?\n\nAll ${name} data on this laptop will be OVERRIDDEN by this file${which === "pilot" ? " (pilot participants, pilot analysis and freeze)" : " (main-study participants)"}. The other study's data is not touched. A backup is saved first.`)) return;
+      btn.disabled = true;
       out.innerHTML = '<p class="muted">Loading… (large files can take a minute)</p>';
       try {
-        const r = await fetch(`/api/admin/data.csv?filename=${encodeURIComponent(f.name)}`, { method: "POST", body: f, credentials: "same-origin" });
+        const r = await fetch(`/api/admin/data.csv?study=${which}&filename=${encodeURIComponent(f.name)}`, { method: "POST", body: f, credentials: "same-origin" });
         const ct = r.headers.get("content-type") || "";
         const d = ct.includes("json") ? await r.json() : { detail: await r.text() };
         if (!r.ok) throw new Error(d.detail || `Upload failed (${r.status})`);
         const c = d.counts || {};
-        out.innerHTML = `<div class="notice good"><b>Data overridden.</b> All study data on this laptop has been replaced by <b>${esc(d.filename)}</b> (from laptop <b>${esc(d.from_site || "?")}</b>):
-          ${c.participants || 0} participants, ${c.tasks || 0} rounds and tasks, ${c.event_batches || 0} blocks of mouse data, ${c.responses || 0} answers.<br>
-          From now on every page uses only this data: Participants, Pilot analysis &amp; freeze, Main study results, the Excel download and <code>analysis/make_figures.py</code>.
-          The previous data is kept as a backup (Backups &amp; tools).</div>`;
-        view.querySelector("#csv-file").value = "";
-        load();
-      } catch (err) { out.innerHTML = `<div class="notice bad">${esc(err.message)}</div>`; }
+        out.innerHTML = `<div class="notice good"><b>${which === "pilot" ? "Pilot" : "Main-study"} data overridden.</b> This laptop's ${name} data has been replaced by <b>${esc(d.filename)}</b> (from laptop <b>${esc(d.from_site || "?")}</b>):
+          ${c.participants || 0} participants, ${c.rounds_and_tasks || 0} rounds and tasks, ${(c.mouse_events || 0).toLocaleString()} mouse events, ${c.answers || 0} answers.<br>
+          Every page now uses this ${name} data. The previous data is kept as a backup (Backups &amp; tools).</div>`;
+        view.querySelector(`#up-${which}-file`).value = "";
+        study = which; load();
+      } catch (err) { out.innerHTML = `<div class="notice bad"><b>Not uploaded, nothing was changed.</b> ${esc(err.message)}</div>`; }
       btn.disabled = false;
     };
+    view.querySelector("#up-pilot").onclick = e => upload("pilot", e.target);
+    view.querySelector("#up-main").onclick = e => upload("main", e.target);
     load();
   },
 
@@ -265,7 +270,7 @@ const TABS = {
     const frozen = o.frozen && o.frozen.frozen;
     view.innerHTML = `
       <div class="panel"><h2>Laptop name</h2>
-        <p class="small muted">Written in the <b>site</b> column of every downloaded sheet, so data from different laptops can be combined without mixing up participants (two laptops both have a P01). Give each laptop a different name before its first participant, e.g. "Riya-laptop".</p>
+        <p class="small muted">Written in the <b>site</b> column of the Overview CSV and inside the Pilot and Main CSVs, so data from different laptops can be combined without mixing up participants (two laptops both have a P01). Give each laptop a different name before its first participant, e.g. "Riya-laptop".</p>
         <label>Name of this laptop</label><input type="text" id="site" value="${esc(o.site_name || "")}">
         <div class="actions"><button class="primary" id="savesite">Save</button></div></div>
       <div class="panel"><h2>Consent page information</h2>

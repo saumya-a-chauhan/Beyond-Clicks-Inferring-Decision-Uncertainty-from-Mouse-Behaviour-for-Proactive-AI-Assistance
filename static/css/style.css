@@ -208,3 +208,5 @@ pre.json { background: #0f172a; color: #e2e8f0; padding: 14px; border-radius: 10
 }
 .chart-cell { position: relative; min-width: 0; }
 .notice.bad { background: #fdecec; border-color: #f3c2c2; color: #7f1d1d; }
+.up-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 8px 0; }
+.up-row b { min-width: 80px; }

@@ -1,4 +1,4 @@
-"""Mouse-movement data for the results Excel: a summary per round, and the raw rows behind it.
+"""Mouse-movement summary per shopping round, for the Overview (dashboard "View data" and the Overview CSV).
 
 The summary numbers are computed from the same logged events and detector ticks that the detector and the pilot
 analysis use (app/features.py, app/detector.py), with the participant's own frozen settings.
@@ -99,25 +99,3 @@ SUMMARY_COLUMNS = [
     ("threshold_used", "Hesitation threshold in this participant's settings"),
     ("time_over_threshold_s", "Seconds the hesitation score was at or above the threshold"),
 ]
-
-TICK_HEAD = (["participant", "study", "round", "task_key", "condition", "phone_set", "t_s", "all_seen"]
-             + [f"raw_{k}" for k in "BFIWS"] + [f"z_{k}" for k in "BFIWS"] + ["score", "over_threshold"])
-EVENT_HEAD = ["participant", "study", "task_key", "task_kind", "round", "t_ms", "type", "x", "y", "scroll_y", "zone", "clicked"]
-
-
-def tick_rows(base, ticks, cfg):
-    variant, thr = cfg.get("variant", "avg"), cfg["threshold"]
-    for tk in ticks:
-        sc = tk["scores"][variant]
-        yield (base + [round(tk["t"] / 1000, 2), bool(tk["seen"])]
-               + [tk["raw"][k] if tk["raw"][k] is None else round(tk["raw"][k], 3) for k in "BFIWS"]
-               + [round(tk["z"][k], 3) for k in "BFIWS"] + [round(sc, 3), sc >= thr])
-
-
-def event_rows(base, ev):
-    rows = ([(e[0], "move", e[1], e[2], None, e[3], None) for e in ev["m"]]
-            + [(e[0], "scroll", None, None, e[1], e[2], None) for e in ev["s"]]
-            + [(e[0], "click", e[1], e[2], None, e[3], e[4] if len(e) > 4 else None) for e in ev["c"]])
-    rows.sort(key=lambda r: r[0])
-    for r in rows:
-        yield base + list(r)

@@ -43,7 +43,7 @@
     <a href="#freeze">5. When and how to freeze</a>
     <a href="#main">6. Running a main session</a>
     <a href="#after">7. After every session day</a>
-    <a href="#excel">8. Excel and CSV (sharing the data)</a>
+    <a href="#excel">8. The CSV files (sharing the data)</a>
     <a href="#safe">9. Is the data safe?</a>
     <a href="#rules">10. Golden rules</a>
     <a href="#trouble">11. Troubleshooting</a>
@@ -59,7 +59,7 @@
     <li>Open the <a href="/admin">researcher dashboard</a> and log in with the password from <code>.env</code> (the line <code>ADMIN_PASSWORD=</code>).</li>
     <li><b>Settings tab:</b>
       <ul>
-        <li><b>Laptop name:</b> type a name, e.g. <code>Riya-laptop</code>, and Save. It labels every row of the Excel sheets.</li>
+        <li><b>Laptop name:</b> type a name, e.g. <code>Riya-laptop</code>, and Save. It labels every row of the downloaded files.</li>
         <li><b>Consent page information:</b> team names, contact emails, supervisor, ethics approval number (or "pending"), reward. Save. Participants see this on the consent page.</li>
       </ul></li>
     <li><b>Backups &amp; tools tab → Check the AI providers → Run check.</b> Gemini and Groq should both show <code>"ok": true</code>. One working is enough.</li>
@@ -139,24 +139,25 @@
 
   <h2 id="after">7. After every session day</h2>
   <ol>
-    <li>Dashboard → <b>Data &amp; Excel → Download Excel (Pilot + Main)</b>. Save it in the team's shared folder.</li>
-    <li>Dashboard → <b>Data &amp; Excel → Download CSV</b>, and send that CSV file to Saumya (WhatsApp, Drive or email). It contains everything, so the full analysis can be run on another laptop.</li>
+    <li>Dashboard → <b>Data (CSV)</b> → <b>Download pilot CSV</b> (during the pilot) or <b>Download main CSV</b> (during the main study). Send that file to Saumya (WhatsApp, Drive or email) exactly as it was downloaded. It contains everything for that study, including every mouse movement.</li>
+    <li>Optional: <b>Download overview CSV</b> to look at the results in Excel (one row per participant and round).</li>
     <li>Dashboard → <b>Backups &amp; tools → Download full backup (.db)</b> and put it somewhere safe (a USB drive or the team drive). This file has <i>everything</i>, including the raw mouse data.</li>
     <li>Close the black window to stop the website when you are done for the day.</li>
   </ol>
 
-  <h2 id="excel">8. Excel and CSV (sharing the data)</h2>
-  <p>Everything is on the <b>Data &amp; Excel</b> tab. Downloads go to your Downloads folder, and a short "Saved …" message confirms each one.</p>
+  <h2 id="excel">8. The CSV files (sharing the data)</h2>
+  <p>Everything is on the <b>Data (CSV)</b> tab. Downloads go to your Downloads folder, and a short "Saved …" message confirms each one. Every file is sorted by participant and round.</p>
   <table class="data">
     <tr><th>Button</th><th>What it does</th><th>Who uses it</th></tr>
-    <tr><td><b>Download Excel (Pilot + Main)</b></td><td>Results to read: a Pilot sheet and a Main sheet (one row per participant and round, including the round's mouse numbers: distance, resting time, switches between phones, longest rests, scroll flips, time on each phone, hesitation score) and an About sheet explaining each column. Tick <b>Include all mouse-movement data</b> to also get every cursor point (<b>Mouse raw</b>), the detector's check every 0.5 s (<b>Mouse signs</b>) and the replay marks (<b>Unsure marks</b>); that file is larger. Always up to date.</td><td>Everyone, to look at results.</td></tr>
-    <tr><td><b>Download CSV</b></td><td>The complete study data in one file: participants, rounds, answers, pop-ups, replay labels, settings (including the freeze) and every mouse event of every participant, one readable line per event (rows with <code>table = mouse</code>: participant, round, time, move/scroll/click, x, y, what was under the cursor).</td><td>The experiment laptop, to send the data to Saumya.</td></tr>
-    <tr><td><b>Upload CSV</b></td><td><b>Overrides all study data on that laptop</b> with the data in the CSV. After that every dashboard page (participants, pilot analysis, freeze, results, Excel) and the analysis script use only the uploaded data, and a "Data overridden" message confirms it. A backup of the previous data is saved first.</td><td>Saumya's laptop, for the analysis.</td></tr>
+    <tr><td><b>Download pilot CSV</b></td><td>Everything recorded for every pilot participant: rounds, answers, replay "unsure" marks, the AI round, every mouse movement (one line per move, scroll and click, with <code>table = mouse</code>), and the pilot analysis and freeze.</td><td>The experiment laptop, to send the pilot data to Saumya.</td></tr>
+    <tr><td><b>Download main CSV</b></td><td>The same for every main-study participant: rounds, answers, pop-ups, AI answers and every mouse movement.</td><td>The experiment laptop, to send the main-study data to Saumya.</td></tr>
+    <tr><td><b>Download overview CSV</b></td><td>The results to read: one row per participant and round (pilot first, then main) with age, gender, condition, time, correct, pop-ups, questionnaires and the round's mouse summary. Opens fine in Excel. Made from the data, so it is never uploaded.</td><td>Everyone, to look at results.</td></tr>
+    <tr><td><b>Upload pilot CSV</b> / <b>Upload main CSV</b></td><td><b>Overrides that study's data on that laptop</b> with the file's data (the pilot file also brings the pilot analysis and freeze); the other study is not touched. Then every dashboard page and the analysis script use the uploaded data, and a "data overridden" message confirms it. A backup is saved first. A wrong file (Excel file, the other study's file, a file re-saved in Excel, a cut-off file) is refused and nothing changes.</td><td>Saumya's laptop, for the analysis.</td></tr>
   </table>
   <ul>
-    <li><b>On the experiment laptop, only ever press Download CSV, never Upload CSV.</b> That laptop's own recordings are the real study data.</li>
-    <li>Send the CSV exactly as it was downloaded. Do not open it in Excel and save it again (Excel can damage it). To look at results, use the Excel download instead.</li>
-    <li>The CSV can be sent again at any time (for example after every session day); the newest one always contains everything.</li>
+    <li><b>On the experiment laptop, only ever download, never upload.</b> That laptop's own recordings are the real study data.</li>
+    <li>Send the pilot and main CSVs exactly as they were downloaded. Do not open them in Excel and save them again (Excel changes them and the upload refuses them). To look at results in Excel, use the overview CSV.</li>
+    <li>The files can be sent again at any time (for example after every session day); the newest one always contains everything for its study.</li>
   </ul>
 
   <h2 id="safe">9. Is the data safe?</h2>
@@ -166,7 +167,7 @@
     <tr><td>Browser closes during a session</td><td><b>Kept.</b> Reopen the start page and click <b>Continue</b>.</td></tr>
     <tr><td>Laptop crashes or a file gets damaged</td><td>A complete copy is saved automatically in the <code>backups</code> folder: when the site starts, every 15 minutes while data changes, after every participant, at freeze, and before any delete or upload (newest 40 kept). See "Restore a backup" below.</td></tr>
     <tr><td>You zip the project folder and send it to someone</td><td>The data goes with it <b>only if</b> <code>hti_study.db</code> (and the <code>backups</code> folder) are inside the ZIP. <b>Stop the website first</b> (close the black window), then zip. The person who unzips it and starts it will see all the data in their dashboard.</td></tr>
-    <tr><td>You send the CSV from <b>Download CSV</b></td><td>The person who uploads it sees exactly the same participants, results and analysis as you.</td></tr>
+    <tr><td>You send the pilot and main CSVs</td><td>The person who uploads them sees exactly the same participants, mouse data, results and analysis as you.</td></tr>
     <tr><td>You send the code-only ZIP Saumya made</td><td>No data inside: it starts empty. Use this for teammates who only need to look or test.</td></tr>
     <tr><td>Someone deletes a participant by mistake</td><td>A backup was made just before the delete; restore it.</td></tr>
   </table>
@@ -185,7 +186,7 @@
     <li><b>Never freeze</b> with simulated (test) data, and never run the test simulator on the real study folder.</li>
     <li><b>Always the external mouse</b>, zoom 100%, full screen.</li>
     <li><b>Do not tell</b> participants about the random pop-ups before the debrief.</li>
-    <li>On the experiment laptop: <b>Download CSV</b> yes, <b>Upload CSV</b> never.</li>
+    <li>On the experiment laptop: <b>download</b> yes, <b>upload</b> never.</li>
     <li>Do not share the <code>.env</code> file publicly: it holds the password and the AI keys.</li>
     <li>Exclude a participant (Participants → Exclude, with a reason) only for: touchpad used, did not finish the 4 rounds, a technical failure, or clearly not trying (chose within 5 seconds every round).</li>
   </ol>

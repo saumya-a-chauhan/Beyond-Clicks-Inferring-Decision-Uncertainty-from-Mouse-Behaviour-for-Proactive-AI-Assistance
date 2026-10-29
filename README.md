@@ -54,10 +54,11 @@ explained: [docs/DETECTOR.md](docs/DETECTOR.md) and [docs/VALUES.md](docs/VALUES
 - Replay labelling built from the logged data (no screen recording needed).
 - Researcher dashboard: participants, pilot threshold sweep with charts, leave-one-out, freeze/unfreeze (audited),
   main results (yes-rates, AUC at random moments, speed, quality, questionnaires), ZIP export.
-- **Data & Excel tab:** download an Excel file with a **Pilot** and a **Main** sheet (one row per participant and round,
-  always up to date, with each round's mouse summary; optionally every cursor point and the detector's 0.5 s checks);
-  **Download CSV** saves the complete study data in one file, and **Upload CSV** loads such a file
-  so every page, the pilot analysis, the freeze, the results and the figures run on that data.
+- **Data (CSV) tab:** three downloads, each sorted by participant and round: the **Pilot CSV** and **Main CSV**
+  (everything recorded for that study, including every mouse event as a readable line) and the **Overview CSV** (one row
+  per participant and round with all results and the round's mouse summary). **Upload pilot CSV** / **Upload main CSV**
+  load a file from the experiment laptop, replacing only that study's data, so every page, the pilot analysis, the
+  freeze, the results and the figures run on it.
 - **Data safety:** every save goes straight into `hti_study.db`; automatic backups in `backups/` (at start, every 15
   minutes while data changes, after each participant, at freeze, before deletes and CSV loads); full backup download.
 - **Experimenter guide** inside the site at `/guide`: setup, pilot, freeze, main study, data, troubleshooting.
@@ -95,9 +96,9 @@ download a ZIP from the dashboard (**Backups & tools**) for analysis.
 - Automatic complete copies go to the **`backups/`** folder (newest 40 kept). Restoring one is described in the guide.
 - **Zipping the folder:** the data travels only if `hti_study.db` is inside the ZIP. Never include `.venv` (about
   500 MB, works only on the PC that made it; the start script recreates it).
-- **Moving the data to another laptop:** on the experiment laptop, dashboard → **Data & Excel** → **Download CSV**.
-  On the analysis laptop, **Upload CSV**: that laptop then shows exactly the same participants, pilot analysis, freeze,
-  results and Excel, and `analysis/make_figures.py` runs on it. A backup is made before loading. Run the **whole study
+- **Moving the data to another laptop:** on the experiment laptop, dashboard → **Data (CSV)** → **Download pilot CSV**
+  and **Download main CSV**. On the analysis laptop, **Upload pilot CSV** and **Upload main CSV**: that laptop then shows
+  exactly the same participants, mouse data, pilot analysis, freeze and results, and `analysis/make_figures.py` runs on it. A backup is made before loading. Run the **whole study
   on one laptop** and never upload a CSV on the experiment laptop itself.
 
 To make a clean code-only ZIP without data or secrets: `git archive -o Beyond-Clicks-code.zip HEAD` (teammates then
@@ -137,8 +138,9 @@ app/
   plans.py        the screens each participant goes through
   phones.py       phone sets and scoring of choices
   db.py           database tables (SQLite locally, Postgres in the cloud)
-  sheets.py       results sheet (Excel download)
-  datacsv.py      study data as one CSV: download and load
+  sheets.py       overview: one row per participant and round (View data, Overview CSV)
+  datacsv.py      Pilot CSV and Main CSV: download and upload
+  mouse.py        mouse summary per round
   backup.py       automatic and manual database backups
   data/phone_sets.json   the 6 phone sets (practice, 4 main, 1 pilot-AI)
 static/           website (home, participant runner, researcher dashboard, guide.html)
