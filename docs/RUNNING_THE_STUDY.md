@@ -48,7 +48,8 @@ After the session: in **Participants**, check that the person is `completed` and
    - **Phone sets.** Each should be 40–60% correct without AI. If a set is outside that range, change it in
      `app/data/phone_sets.json`, then re-check it with 2–3 extra pilot people.
    - **Timing checks:**
-     - the median "unsure" moment should be longer than the detection time of about 5 s
+     - the median "unsure" moment should be longer than the detection time of about 3.5 s
+     - the at-least-once rule: Smart should be clearly more often right than "same moment, score not used"
      - unsure moments per task should fit within the maximum of 3 pop-ups
      - the label lag should fit within the 3 s match margin
    - **Speed histogram.** The dip between still and moving should be near 50 px/s.

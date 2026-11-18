@@ -298,7 +298,7 @@ def api_events(task_id: int, body: Events):
     spec = content["spec"] or (phones.get_set(t["set_id"])["card"].get("priorities") or ["battery"])[0]
     with db.engine.begin() as conn:
         res = conn.execute(db.popups.insert().values(
-            task_id=task_id, t_ms=fired["t"], source=live.MODE[t["condition"]],
+            task_id=task_id, t_ms=fired["t"], source=live.MODE[t["condition"]], stage=lt.rule.stage,
             predicted_type=content["predicted_type"], pair=db.dumps(pair), spec=spec,
             score=fired["scores"]["avg"], zs=db.dumps(fired["z"])))
         pop_id = res.inserted_primary_key[0]

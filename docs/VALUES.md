@@ -14,7 +14,7 @@ and then they are frozen.
 | --- | --- | --- | --- |
 | Sampling | ~60 Hz (one sample per ≥ 16 ms) | What browsers give (about once per screen refresh); voluntary hand movement is mostly below ~10 Hz | Paper + technical |
 | Check interval | 0.5 s | Responses under ~1 s feel immediate (Nielsen, 1993) | Paper |
-| Window | 3 s | Holds at least one full A → B → A comparison; detection (~5 s) must be shorter than a typical unsure moment (checked in the pilot) | Pilot + Design |
+| Window | 3 s | Holds at least one full A → B → A comparison; detection (~3.5 s) should be shorter than a typical unsure moment (checked in the pilot) | Pilot + Design |
 | Lookback | 10 s | Extra history so a visit or rest that began before the window is measured correctly | Design |
 | Visit minimum | 200 ms | Shorter than a typical eye fixation (~200–300 ms; Rayner, 1998): a quick pass is not "looking" | Paper |
 | Resting speed | < 50 px/s | At 50 px/s the cursor moves < 8 px in 150 ms (less than a letter); confirmed by the dip in the pilot speed histogram | Pilot + Design |
@@ -29,7 +29,7 @@ and then they are frozen.
 | z cap | 5 | One extreme sign should not decide alone | Design (sensitivity 3 / 10) |
 | Equal weights | 1/5 each | Small pilot; equal weights predict about as well as fitted ones in small samples (Dawes, 1979) | Paper |
 | Threshold | 1.5 provisional | Final value from the pilot rule | Pilot |
-| Persistence | 4 checks (~2 s) | Removes one-off spikes | Pilot + Design |
+| Persistence | 1 check | Was 4 checks (~2 s, detection ~5 s). The pilot's unsure moments lasted a median 2.2 s, so detection was too slow; with 1 check (detection ~3.5 s) the pilot rule still passed: 80% of pop-ups right, leave-one-out precision 83%. Shorter windows (1.5–2 s) were tested and were not better | Pilot |
 
 ## Pop-ups
 
@@ -40,6 +40,7 @@ and then they are frozen.
 | Max per round | 3 | Interruptions cost attention (Bailey & Konstan, 2006); just above the typical number of unsure moments per round in the pilot | Paper + Pilot |
 | Neutral question first | "were you unsure just now?" | Content-free and identical in Smart and Random, so the answer is not led by the pop-up naming the phones | Design |
 | Random pop-up rate | pilot rate per minute | Matches how often the Smart pop-up fires, so the two conditions differ only in timing | Pilot |
+| At-least-once rule | after 10 s, score ≥ 1.0 | If a round has had no pop-up 10 s after all phones were seen: Smart pops up at the first check with score ≥ 1.0; Random pops up at that same 10 s moment without the score. Pilot: pop-ups in 13/24 rounds instead of 5/24; Smart 69% right vs 44% at the same moment without the score (chance 30%). Chosen among 5/8/10/12 s × 0.5/0.75/1.0 on the same 6 people: report as pilot-tuned. A 5 s wait gave more rounds (16/24) but Smart was barely better than timing alone (56% vs 47%) | Pilot |
 
 ## Threshold selection
 
@@ -68,7 +69,7 @@ and then they are frozen.
 | --- | --- |
 | Resting speed | 25 / 50 / 75 px/s |
 | Window | 2 / 3 / 5 s |
-| Persistence | 2 / 4 / 6 checks |
+| Persistence | 1 / 2 / 4 checks |
 | z cap | 3 / 5 / 10 |
 | Minimum move for W | 15 / 30 / 60 px |
 | Pausing sign | with / without I |

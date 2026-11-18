@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 
 from sqlalchemy import (Boolean, Column, DateTime, Float, ForeignKey, Integer, LargeBinary,
                         MetaData, String, Table, Text, UniqueConstraint, create_engine, event,
-                        select)
+                        inspect, select, text)
 
 from . import config
 
@@ -94,6 +94,7 @@ popups = Table(
     Column("task_id", Integer, ForeignKey("tasks.id", ondelete="CASCADE"), index=True),
     Column("t_ms", Integer),
     Column("source", String(12)),          # detector | random
+    Column("stage", String(10)),           # main (threshold / random rate) | extra (at-least-once rule)
     Column("predicted_type", String(12)),  # compare | explain | general
     Column("pair", Text),                  # JSON [phoneId, phoneId]
     Column("spec", String(16)),
@@ -171,8 +172,17 @@ def now():
     return datetime.now(timezone.utc)
 
 
+# Columns added after the first release: (table, column, SQL type). Added to existing databases on start.
+MIGRATIONS = [("popups", "stage", "VARCHAR(10)")]
+
+
 def init_db():
     md.create_all(engine)
+    have = {t: {c["name"] for c in inspect(engine).get_columns(t)} for t, _, _ in MIGRATIONS}
+    with engine.begin() as c:
+        for table, col, typ in MIGRATIONS:
+            if col not in have[table]:
+                c.execute(text(f"ALTER TABLE {table} ADD COLUMN {col} {typ}"))
 
 
 def dumps(o):

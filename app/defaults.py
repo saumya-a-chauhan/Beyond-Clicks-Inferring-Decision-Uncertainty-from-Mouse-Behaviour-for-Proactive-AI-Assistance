@@ -12,7 +12,7 @@ DETECTOR_DEFAULTS = {
     "tick_ms": 500,            # check every 0.5 s (Nielsen 1993: < 1 s feels immediate)
     "window_ms": 3000,         # 3 s sliding window
     "lookback_ms": 10000,      # extra history used to know where a visit or rest began
-    "persistence_ticks": 4,    # score must stay >= threshold for 4 checks in a row (~2 s)
+    "persistence_ticks": 1,    # one check at/above threshold is enough: detection 3.5 s (pilot: unsure marks ~2 s long)
     # cursor event definitions
     "rest_speed_px_s": 50.0,   # resting = slower than 50 px/s
     "rest_point_ms": 150,      # a rest point = resting for >= 150 ms (segments moves for W)
@@ -27,6 +27,11 @@ DETECTOR_DEFAULTS = {
     "cooldown_s": 45,
     "dismiss_cooldown_s": 90,
     "max_popups": 3,
+    # at-least-once rule: if no pop-up within 10 s after all phones were seen, Smart (C3) shows one at the first
+    # check with score >= 1.0, Random (C4) shows one at that same 10 s moment without looking at the score
+    # (pilot: 13/24 rounds get a pop-up instead of 5/24; Smart 69% right vs 44% at the same moment without score)
+    "extra_after_s": 10,
+    "extra_threshold": 1.0,
     # random pop-up condition (C4): pop-ups per minute after "seen all"; pilot replaces
     "c4_rate_per_min": 0.5,
 }
