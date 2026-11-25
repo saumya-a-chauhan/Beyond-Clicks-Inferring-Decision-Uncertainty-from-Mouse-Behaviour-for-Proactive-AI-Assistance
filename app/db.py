@@ -212,14 +212,14 @@ def init_db():
         if seed_path.exists():
             with open(seed_path, "r", encoding="utf-8") as f:
                 seed = json.load(f)
-            if frozen is None or frozen.get("threshold") != 1.5 or not (get_setting("detector", {}) or {}).get("compulsory_s"):
+            if frozen is None or frozen.get("threshold") != 1.5 or (get_setting("detector", {}) or {}).get("compulsory_s") != 10:
                 if seed.get("frozen"):
                     set_setting("frozen", seed["frozen"])
                 if seed.get("detector"):
                     set_setting("detector", seed["detector"])
                 if seed.get("pilot_analysis_last"):
                     set_setting("pilot_analysis_last", seed["pilot_analysis_last"])
-                log_audit("init_seed", {"source": "frozen_seed.json", "threshold": 1.5})
+                log_audit("init_seed", {"source": "frozen_seed.json", "threshold": 1.5, "compulsory_s": 10})
     except Exception:
         pass
 

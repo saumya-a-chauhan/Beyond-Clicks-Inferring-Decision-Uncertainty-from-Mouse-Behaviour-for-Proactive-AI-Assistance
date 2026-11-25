@@ -63,14 +63,15 @@ def test_correct_phone_and_real_trade_off():
             assert _better(a, d, key, higher), f"{sid}: dominated phone must be worse on {key}"
 
 
-def test_measured_values_are_in_the_specs():
-    """The shopping screen shows only the specs ('View details'), so every measured value must be there:
-    the lab table and reviews are shown only after the first choice."""
+def test_lab_measurements_are_in_details_and_not_in_specs():
+    """Shopping cards ('View details') show technical specs without giving away direct lab measurements.
+    The exact lab measurements are reserved for 'details', which appears on the side-by-side comparison screen."""
     for sid, s in catalog()["sets"].items():
         for p in s["phones"]:
-            text = " ".join(p["specs"].values())
-            for _, value in p["details"]:
-                assert value in text, (sid, p["id"], value)
+            assert len(p["details"]) >= 2, (sid, p["id"])
+            text = " ".join(p["specs"].values()).lower()
+            assert "screen-on time" not in text, f"{p['id']} specs leaked screen-on time"
+            assert "sharp photos down to" not in text, f"{p['id']} specs leaked low-light lux"
 
 
 def test_every_phone_has_its_own_design():

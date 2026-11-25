@@ -326,6 +326,44 @@ def api_events(task_id: int, body: Events):
         "spec": {"key": spec, "label": labels.get(spec, spec)}}}
 
 
+class TriggerPopupBody(BaseModel):
+    token: str
+    t: int = 0
+
+
+@app.post("/api/task/{task_id}/trigger-popup")
+def api_trigger_popup(task_id: int, body: TriggerPopupBody):
+    with db.engine.begin() as conn:
+        p, t = task_for(conn, task_id, body.token)
+        if t["ended_at"] is not None or t["condition"] not in ("C3", "C4"):
+            return {"ok": True, "popup": None}
+        existing = conn.execute(select(db.popups).where(db.popups.c.task_id == task_id).order_by(db.popups.c.t_ms)).first()
+        labels = phones.catalog()["spec_labels"]
+        if existing:
+            ex = dict(existing._mapping)
+            pair = db.loads(ex["pair"], [])
+            spec = ex["spec"] or "battery"
+            return {"ok": True, "popup": {
+                "id": ex["id"], "predicted_type": ex["predicted_type"],
+                "pair": [{"id": x, "name": name_of(t["set_id"], x)} for x in pair],
+                "spec": {"key": spec, "label": labels.get(spec, spec)}}}
+        mode = live.MODE[t["condition"]]
+        ptype = "compare" if mode == "detector" else random.choice(["compare", "explain", "general"])
+        cards = db.loads(t["card_order"], [])
+        pair = cards[:2] if len(cards) >= 2 else ["P1", "P2"]
+        priorities = phones.get_set(t["set_id"])["card"].get("priorities") or ["battery"]
+        spec = priorities[0]
+        res = conn.execute(db.popups.insert().values(
+            task_id=task_id, t_ms=body.t or 7000, source=mode, stage="compulsory",
+            predicted_type=ptype, pair=db.dumps(pair), spec=spec,
+            score=1.5, zs=db.dumps({"B": 1.5, "F": 0.0, "I": 0.0, "W": 0.0, "S": 0.0})))
+        pop_id = res.inserted_primary_key[0]
+        return {"ok": True, "popup": {
+            "id": pop_id, "predicted_type": ptype,
+            "pair": [{"id": x, "name": name_of(t["set_id"], x)} for x in pair],
+            "spec": {"key": spec, "label": labels.get(spec, spec)}}}
+
+
 class TaskEnd(BaseModel):
     token: str
     chosen: str

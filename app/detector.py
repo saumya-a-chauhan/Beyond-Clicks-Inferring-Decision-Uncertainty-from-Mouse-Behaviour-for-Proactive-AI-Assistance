@@ -57,7 +57,7 @@ class TriggerRule:
         self.open = False
         self.rng = random.Random(seed)
         self.extra = extra and cfg.get("extra_after_s") is not None
-        self.compulsory_s = cfg.get("compulsory_s", 12)
+        self.compulsory_s = cfg.get("compulsory_s", 7)
         self.seen_at = None
         self.stage = None        # stage of the last pop-up: "main", "extra", or "compulsory"
 
@@ -89,9 +89,9 @@ class TriggerRule:
 
         self.stage = "main"
 
-        # At-least-once rule
+        # At-least-once rule and compulsory fallback (only active when extra=True in AI rounds)
         if not fire and self.extra and not self.fired:
-            if self.seen_at is not None and t - self.seen_at >= self.cfg.get("extra_after_s", 8) * 1000:
+            if self.seen_at is not None and t - self.seen_at >= self.cfg.get("extra_after_s", 4) * 1000:
                 fire = self.mode == "random" or score >= self.cfg.get("extra_threshold", 0.8)
                 self.stage = "extra"
             # Compulsory fallback: guarantee AI triggers in AI round

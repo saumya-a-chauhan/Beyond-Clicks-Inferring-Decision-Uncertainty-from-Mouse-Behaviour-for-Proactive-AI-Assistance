@@ -27,14 +27,14 @@ DETECTOR_DEFAULTS = {
     "cooldown_s": 45,
     "dismiss_cooldown_s": 90,
     "max_popups": 3,
-    # at-least-once rule: if no pop-up within 8 s after phones were seen, Smart (C3) shows one at the first
+    # at-least-once rule: if no pop-up within 4 s after phones were seen, Smart (C3) shows one at the first
     # check with score >= 0.8, Random (C4) shows one at that same moment without looking at the score
-    "extra_after_s": 8,
+    "extra_after_s": 4,
     "extra_threshold": 0.8,
-    # compulsory trigger: guaranteed AI assistance in AI rounds (C3 & C4) if not triggered by 12 seconds
-    "compulsory_s": 12,
+    # compulsory trigger: guaranteed AI assistance in AI rounds (C3 & C4) if not triggered by 10 seconds
+    "compulsory_s": 10,
     # random pop-up condition (C4): pop-ups per minute after "seen all"; pilot replaces
-    "c4_rate_per_min": 0.5,
+    "c4_rate_per_min": 1.5,
 }
 
 THRESHOLD_GRID = [1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 2.75, 3.0]

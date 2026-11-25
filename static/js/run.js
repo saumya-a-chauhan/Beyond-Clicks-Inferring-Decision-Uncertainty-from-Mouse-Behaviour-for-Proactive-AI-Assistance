@@ -211,15 +211,26 @@ const STEPS = {
     app.innerHTML = `<div class="wide" id="shoproot"></div>`;
     leaving = true;
     let logger = null;
-    const ctx = { token: S.token, taskId: t.task_id, set: t.set, card_order: t.card_order, now: () => logger.now(), demo: t.condition === "DEMO" };
-    logger = new Logger(t.task_id, S.token, t.time_offset_ms, t.next_seq, r => AiPanel.showPopup(r.popup, ctx));
     let done = false;
+    let popupShown = false;
+    let compulsoryTimer = null;
+    const ctx = { token: S.token, taskId: t.task_id, set: t.set, card_order: t.card_order, now: () => logger.now(), demo: t.condition === "DEMO" };
+    const onPopup = pop => {
+      if (done || popupShown || !pop) return;
+      popupShown = true;
+      if (compulsoryTimer) clearTimeout(compulsoryTimer);
+      AiPanel.showPopup(pop, ctx);
+    };
+    logger = new Logger(t.task_id, S.token, t.time_offset_ms, t.next_seq, r => {
+      if (r && r.popup) onPopup(r.popup);
+    });
     Shop.render(document.getElementById("shoproot"), {
       set: t.set, card_order: t.card_order, header, prompt: prompts[st.task_kind],
       buyLabel: st.task_kind.startsWith("baseline") ? "Choose this phone" : "Buy this phone",
       onBuy: async pid => {
         if (done) return;
         done = true;
+        if (compulsoryTimer) clearTimeout(compulsoryTimer);
         const decision = logger.now();
         AiPanel.close();
         document.querySelectorAll(".ai-fab").forEach(n => n.remove());
@@ -235,13 +246,27 @@ const STEPS = {
     if (t.condition === "DEMO") {
       const demo = () => {
         if (done) return;
-        if (AiPanel.isOpen()) { setTimeout(demo, 3000); return; }   // wait until the Ask-AI panel is closed
+        if (AiPanel.isOpen()) { setTimeout(demo, 2500); return; }   // wait until the Ask-AI panel is closed
         const ids = t.card_order;
         const name = id => t.set.phones.find(p => p.id === id).name;
-        AiPanel.showPopup({ id: 0, predicted_type: "compare", pair: [{ id: ids[0], name: name(ids[0]) }, { id: ids[1], name: name(ids[1]) }],
-                            spec: { key: "storage", label: t.set.spec_labels.storage } }, ctx);
+        onPopup({ id: 0, predicted_type: "compare", pair: [{ id: ids[0], name: name(ids[0]) }, { id: ids[1], name: name(ids[1]) }],
+                  spec: { key: "storage", label: t.set.spec_labels.storage } });
       };
-      setTimeout(demo, 12000);
+      compulsoryTimer = setTimeout(demo, 6500);
+    } else if (t.condition === "C3" || t.condition === "C4") {
+      // Compulsory fallback: guarantee popup appears by 6.5s in AI rounds if events did not trigger earlier
+      const trigger = async () => {
+        if (done || popupShown || AiPanel.isOpen()) return;
+        try {
+          const r = await API.post(`/api/task/${t.task_id}/trigger-popup`, { token: S.token, t: logger.now() });
+          if (r && r.popup && !done && !popupShown) {
+            onPopup(r.popup);
+          }
+        } catch (e) {
+          console.error("Popup trigger fallback error:", e);
+        }
+      };
+      compulsoryTimer = setTimeout(trigger, 6500);
     }
   },
 

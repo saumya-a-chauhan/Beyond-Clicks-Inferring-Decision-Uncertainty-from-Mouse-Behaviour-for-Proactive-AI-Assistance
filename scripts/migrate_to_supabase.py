@@ -65,6 +65,17 @@ def migrate(dest_url: str, wipe_dest: bool = False):
     # 1. Create tables on destination
     print("\n Ensuring tables exist in target database...")
     db.md.create_all(dest_engine)
+    try:
+        from sqlalchemy import inspect, text
+        insp = inspect(dest_engine)
+        if insp.has_table("popups"):
+            cols = {c["name"] for c in insp.get_columns("popups")}
+            if "stage" not in cols:
+                with dest_engine.begin() as dest_conn:
+                    dest_conn.execute(text("ALTER TABLE popups ADD COLUMN stage VARCHAR(16)"))
+                print(" Added missing 'stage' column to popups table on destination.")
+    except Exception as e:
+        print(f"Migration note: {e}")
     print(" Tables verified.")
 
     # 2. Check if destination already has data
