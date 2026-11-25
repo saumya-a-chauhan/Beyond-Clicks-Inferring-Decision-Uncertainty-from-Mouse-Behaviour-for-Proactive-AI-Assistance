@@ -224,11 +224,52 @@ const STEPS = {
     logger = new Logger(t.task_id, S.token, t.time_offset_ms, t.next_seq, r => {
       if (r && r.popup) onPopup(r.popup);
     });
+
+    const triggerAiPopup = (reason = "timer") => {
+      if (done || popupShown) return;
+      if (AiPanel.isOpen()) {
+        if (compulsoryTimer) clearTimeout(compulsoryTimer);
+        compulsoryTimer = setTimeout(() => triggerAiPopup(reason), 1500);
+        return;
+      }
+      const ids = t.card_order || [];
+      const name = id => {
+        const ph = (t.set.phones || []).find(p => p.id === id);
+        return ph ? ph.name : id;
+      };
+      const p1 = ids[0] || "P1", p2 = ids[1] || "P2";
+      const priorities = (t.set.card && t.set.card.priorities) || ["battery"];
+      const specKey = priorities[0] || "battery";
+      const specLabel = (t.set.spec_labels && t.set.spec_labels[specKey]) || specKey;
+      const localPop = {
+        id: null,
+        predicted_type: t.condition === "C3" ? "compare" : (Math.random() < 0.5 ? "compare" : "explain"),
+        pair: [{ id: p1, name: name(p1) }, { id: p2, name: name(p2) }],
+        spec: { key: specKey, label: specLabel },
+      };
+      // Show immediately so there is zero network delay
+      onPopup(localPop);
+      // Simultaneously sync with server so database records the popup
+      API.post(`/api/task/${t.task_id}/trigger-popup`, { token: S.token, t: logger ? logger.now() : 2800 })
+        .then(r => {
+          if (r && r.popup && r.popup.id) {
+            localPop.id = r.popup.id;
+          }
+        })
+        .catch(e => console.warn("trigger-popup sync:", e));
+    };
+
     Shop.render(document.getElementById("shoproot"), {
       set: t.set, card_order: t.card_order, header, prompt: prompts[st.task_kind],
       buyLabel: st.task_kind.startsWith("baseline") ? "Choose this phone" : "Buy this phone",
       onBuy: async pid => {
         if (done) return;
+        // In proactive AI rounds (C3 Smart / C4 Random), guarantee the AI assistant is seen at least once
+        if ((t.condition === "C3" || t.condition === "C4") && !popupShown) {
+          triggerAiPopup("onBuy");
+          alert("Before finalizing your decision, please review the recommendation from your AI assistant!");
+          return;
+        }
         done = true;
         if (compulsoryTimer) clearTimeout(compulsoryTimer);
         const decision = logger.now();
@@ -252,21 +293,10 @@ const STEPS = {
         onPopup({ id: 0, predicted_type: "compare", pair: [{ id: ids[0], name: name(ids[0]) }, { id: ids[1], name: name(ids[1]) }],
                   spec: { key: "storage", label: t.set.spec_labels.storage } });
       };
-      compulsoryTimer = setTimeout(demo, 6500);
+      compulsoryTimer = setTimeout(demo, 3500);
     } else if (t.condition === "C3" || t.condition === "C4") {
-      // Compulsory fallback: guarantee popup appears by 6.5s in AI rounds if events did not trigger earlier
-      const trigger = async () => {
-        if (done || popupShown || AiPanel.isOpen()) return;
-        try {
-          const r = await API.post(`/api/task/${t.task_id}/trigger-popup`, { token: S.token, t: logger.now() });
-          if (r && r.popup && !done && !popupShown) {
-            onPopup(r.popup);
-          }
-        } catch (e) {
-          console.error("Popup trigger fallback error:", e);
-        }
-      };
-      compulsoryTimer = setTimeout(trigger, 6500);
+      // Proactive AI rounds: trigger pop-up after 2.8 seconds so participant definitely experiences it
+      compulsoryTimer = setTimeout(() => triggerAiPopup("timer"), 2800);
     }
   },
 

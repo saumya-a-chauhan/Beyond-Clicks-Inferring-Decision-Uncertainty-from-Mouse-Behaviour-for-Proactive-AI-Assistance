@@ -250,49 +250,50 @@ const AiPanel = {
   /* Pop-up from the detector (C3) or random timer (C4). ctx: {token, now(), set, demo} */
   showPopup(pop, ctx) {
     const n = this._mount(`
-      <div class="ai-head">AI assistant</div>
+      <div class="ai-head"><span style="font-size:1.15rem">🤖</span> <b>AI Assistant</b></div>
       <p><b>Quick question: were you unsure just now?</b></p>
       <div class="row"><button class="primary" data-a="yes">Yes</button><button data-a="no">No</button></div>`);
     n.querySelectorAll("[data-a]").forEach(b => b.onclick = async () => {
-      if (!ctx.demo) API.post(`/api/popup/${pop.id}/unsure`, { token: ctx.token, t: ctx.now(), answer: b.dataset.a }).catch(() => {});
+      if (!ctx.demo && pop && pop.id) API.post(`/api/popup/${pop.id}/unsure`, { token: ctx.token, t: ctx.now(), answer: b.dataset.a }).catch(() => {});
       this._offer(pop, ctx);
     });
   },
   _offer(pop, ctx) {
-    const names = (pop.pair || []).map(p => p.name);
-    const cmp = `<button data-c="compare">Compare ${esc(names[0] || "two phones")} and ${esc(names[1] || "")}</button>`;
-    const exp = `<button data-c="explain">Explain "${esc(pop.spec ? pop.spec.label : "a spec")}"</button>`;
+    const names = (pop.pair || []).map(p => p.name || p.id || "phone");
+    const cmp = `<button data-c="compare">Compare ${esc(names[0] || "two phones")} and ${esc(names[1] || "another")}</button>`;
+    const specLabel = pop.spec ? (pop.spec.label || pop.spec.key || "a spec") : "a spec";
+    const exp = `<button data-c="explain">Explain "${esc(specLabel)}"</button>`;
     const gen = `<button data-c="general">Give me a quick overview</button>`;
     const first = pop.predicted_type === "compare" ? [cmp, exp, gen] : pop.predicted_type === "explain" ? [exp, cmp, gen] : [gen, cmp, exp];
-    const lead = pop.predicted_type === "compare" ? `Torn between ${esc(names[0])} and ${esc(names[1])}? I can help.`
-      : pop.predicted_type === "explain" ? `Want "${esc(pop.spec.label)}" explained?` : "Need help deciding?";
+    const lead = pop.predicted_type === "compare" ? `Torn between ${esc(names[0] || "these phones")} and ${esc(names[1] || "another")}? I can help.`
+      : pop.predicted_type === "explain" ? `Want "${esc(specLabel)}" explained?` : "Need help deciding?";
     const n = this._mount(`
-      <div class="ai-head">AI assistant <button class="x" data-c="dismiss" title="Close">No thanks</button></div>
+      <div class="ai-head"><span style="font-size:1.15rem">🤖</span> <b>AI Assistant</b> <button class="x" data-c="dismiss" title="Close">No thanks</button></div>
       <p>${lead}</p>
       <div class="opts">${first.join("")}</div>`);
     n.querySelectorAll("[data-c]").forEach(b => b.onclick = async () => {
       const choice = b.dataset.c;
       if (choice === "dismiss") {
-        if (!ctx.demo) API.post(`/api/popup/${pop.id}/choice`, { token: ctx.token, t: ctx.now(), choice }).catch(() => {});
+        if (!ctx.demo && pop && pop.id) API.post(`/api/popup/${pop.id}/choice`, { token: ctx.token, t: ctx.now(), choice }).catch(() => {});
         this.close(); return;
       }
       const g = this._loading();
       try {
         let r;
-        const pair = (pop.pair || []).map(p => p.id);
-        if (ctx.demo) {
+        const pair = (pop.pair || []).map(p => p.id || p);
+        if (ctx.demo || !pop.id) {
           r = await API.post(`/api/task/${ctx.taskId}/ask`, { token: ctx.token, t: ctx.now(), mode: choice, pair, spec: pop.spec && pop.spec.key });
         } else {
           r = await API.post(`/api/popup/${pop.id}/choice`, { token: ctx.token, t: ctx.now(), choice, pair, spec: pop.spec && pop.spec.key });
         }
         if (g !== this.gen) return;
-        this._answer(r.text, () => { if (!ctx.demo) API.post(`/api/popup/${pop.id}/closed`, { token: ctx.token, t: ctx.now() }).catch(() => {}); });
+        this._answer(r.text, () => { if (!ctx.demo && pop && pop.id) API.post(`/api/popup/${pop.id}/closed`, { token: ctx.token, t: ctx.now() }).catch(() => {}); });
       } catch (e) { if (g === this.gen) this._answer("Sorry, the assistant could not answer right now.", () => {}); }
     });
   },
-  _loading() { this._mount(`<div class="ai-head">AI assistant</div><p class="muted">Thinking<span class="dots"></span></p>`); return this.gen; },
+  _loading() { this._mount(`<div class="ai-head"><span style="font-size:1.15rem">🤖</span> <b>AI Assistant</b></div><p class="muted">Thinking<span class="dots"></span></p>`); return this.gen; },
   _answer(text, onClose) {
-    const n = this._mount(`<div class="ai-head">AI assistant <button class="x">Close</button></div><div class="answer">${formatAnswer(text)}</div>`);
+    const n = this._mount(`<div class="ai-head"><span style="font-size:1.15rem">🤖</span> <b>AI Assistant</b> <button class="x">Close</button></div><div class="answer">${formatAnswer(text)}</div>`);
     n.querySelector(".x").onclick = () => { onClose(); this.close(); };
   },
 

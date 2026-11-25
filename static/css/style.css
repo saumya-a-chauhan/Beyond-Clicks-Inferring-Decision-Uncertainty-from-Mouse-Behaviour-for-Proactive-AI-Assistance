@@ -144,9 +144,9 @@ textarea { min-height: 90px; resize: vertical; }
 
 /* ---------- AI panel (pop-up and Ask AI) ---------- */
 .ai-panel {
-  position: fixed; right: 24px; bottom: 24px; width: 380px; max-width: calc(100vw - 48px); z-index: 50;
-  background: var(--panel); border: 2px solid var(--brand); border-radius: 16px; box-shadow: 0 10px 40px rgba(20,30,80,.25);
-  padding: 18px 20px; animation: pop .18s ease-out;
+  position: fixed; right: 24px; bottom: 24px; width: 380px; max-width: calc(100vw - 48px); z-index: 99999 !important;
+  background: #ffffff; border: 3px solid #2563eb; border-radius: 16px; box-shadow: 0 12px 48px rgba(37,99,235,.28), 0 4px 16px rgba(0,0,0,.15);
+  padding: 20px 22px; animation: pop .22s cubic-bezier(0.16, 1, 0.3, 1);
 }
 @keyframes pop { from { transform: translateY(12px); opacity: 0; } to { transform: none; opacity: 1; } }
 .ai-panel .ai-head { display: flex; align-items: center; gap: 8px; font-weight: 700; color: var(--brand); margin-bottom: 8px; }
@@ -154,7 +154,7 @@ textarea { min-height: 90px; resize: vertical; }
 .ai-panel .opts { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
 .ai-panel .opts button { justify-content: flex-start; text-align: left; }
 .ai-panel .answer { white-space: pre-wrap; background: #f7f8fc; border-radius: 10px; padding: 12px; margin-top: 10px; max-height: 320px; overflow: auto; font-size: .95rem; }
-.ai-fab { position: fixed; right: 24px; bottom: 24px; z-index: 40; border-radius: 99px; padding: 14px 22px; box-shadow: var(--shadow); }
+.ai-fab { position: fixed; right: 24px; bottom: 24px; z-index: 9999 !important; border-radius: 99px; padding: 14px 22px; box-shadow: var(--shadow); }
 .dots::after { content: "..."; animation: dots 1s steps(3) infinite; }
 
 /* ---------- modal ---------- */

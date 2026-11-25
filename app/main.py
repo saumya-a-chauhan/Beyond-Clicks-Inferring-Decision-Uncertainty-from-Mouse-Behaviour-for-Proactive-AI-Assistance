@@ -130,10 +130,12 @@ async def vercel_path_rewrite(request: Request, call_next):
 
 @app.middleware("http")
 async def revalidate_static(request: Request, call_next):
-    # browsers must re-check site files, so an updated version reaches every participant laptop
+    # browsers must never use stale cached scripts
     response = await call_next(request)
     if request.url.path.startswith("/static/") or request.url.path in ("/", "/run", "/admin", "/guide"):
-        response.headers["Cache-Control"] = "no-cache"
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
     return response
 
 
@@ -354,7 +356,7 @@ def api_trigger_popup(task_id: int, body: TriggerPopupBody):
         priorities = phones.get_set(t["set_id"])["card"].get("priorities") or ["battery"]
         spec = priorities[0]
         res = conn.execute(db.popups.insert().values(
-            task_id=task_id, t_ms=body.t or 7000, source=mode, stage="compulsory",
+            task_id=task_id, t_ms=body.t or 3500, source=mode, stage="compulsory",
             predicted_type=ptype, pair=db.dumps(pair), spec=spec,
             score=1.5, zs=db.dumps({"B": 1.5, "F": 0.0, "I": 0.0, "W": 0.0, "S": 0.0})))
         pop_id = res.inserted_primary_key[0]
