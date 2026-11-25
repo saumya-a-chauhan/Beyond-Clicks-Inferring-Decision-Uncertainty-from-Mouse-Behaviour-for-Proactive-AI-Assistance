@@ -294,9 +294,13 @@ const STEPS = {
                   spec: { key: "storage", label: t.set.spec_labels.storage } });
       };
       compulsoryTimer = setTimeout(demo, 3500);
-    } else if (t.condition === "C3" || t.condition === "C4") {
-      // Proactive AI rounds: trigger pop-up after 2.8 seconds so participant definitely experiences it
-      compulsoryTimer = setTimeout(() => triggerAiPopup("timer"), 2800);
+    } else if (t.condition === "C3") {
+      // In C3 Smart condition, let the hesitation detector monitor mouse behaviour naturally.
+      // Safety backstop only triggers after 14 seconds if no natural hesitation was detected.
+      compulsoryTimer = setTimeout(() => triggerAiPopup("fallback"), 14000);
+    } else if (t.condition === "C4") {
+      // In C4 Random condition, random timer fires or safety backstop at 9 seconds.
+      compulsoryTimer = setTimeout(() => triggerAiPopup("fallback"), 9000);
     }
   },
 
