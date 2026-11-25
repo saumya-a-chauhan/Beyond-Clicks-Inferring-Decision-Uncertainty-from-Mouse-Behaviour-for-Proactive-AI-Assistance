@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 
 from sqlalchemy import (Boolean, Column, DateTime, Float, ForeignKey, Integer, LargeBinary,
                         MetaData, String, Table, Text, UniqueConstraint, create_engine, event,
-                        select)
+                        inspect, select, text)
 from sqlalchemy.pool import NullPool
 
 from . import config
@@ -195,31 +195,33 @@ def init_db():
     md.create_all(engine)
     # Apply schema migrations for existing databases
     try:
-        have = {t: {c["name"] for c in inspect(engine).get_columns(t)} for t, _, _ in MIGRATIONS}
-        with engine.begin() as c:
-            for table, col, typ in MIGRATIONS:
-                if col not in have.get(table, set()):
-                    c.execute(text(f"ALTER TABLE {table} ADD COLUMN {col} {typ}"))
+        insp = inspect(engine)
+        if insp.has_table("popups"):
+            existing_cols = {c["name"] for c in insp.get_columns("popups")}
+            with engine.begin() as c:
+                for table, col, typ in MIGRATIONS:
+                    if col not in existing_cols:
+                        c.execute(text(f"ALTER TABLE {table} ADD COLUMN {col} {typ}"))
     except Exception:
         pass
-    # If the database has no frozen settings (e.g. fresh Supabase instance),
+    # If the database has no frozen settings (or needs update to 1.5 threshold & compulsory rule),
     # seed the frozen pilot analysis and threshold so the main study is immediately unlocked.
-    frozen = get_setting("frozen")
-    if frozen is None:
+    try:
+        frozen = get_setting("frozen")
         seed_path = config.DATA_DIR / "frozen_seed.json"
         if seed_path.exists():
-            try:
-                with open(seed_path, "r", encoding="utf-8") as f:
-                    seed = json.load(f)
+            with open(seed_path, "r", encoding="utf-8") as f:
+                seed = json.load(f)
+            if frozen is None or frozen.get("threshold") != 1.5 or not (get_setting("detector", {}) or {}).get("compulsory_s"):
                 if seed.get("frozen"):
                     set_setting("frozen", seed["frozen"])
                 if seed.get("detector"):
                     set_setting("detector", seed["detector"])
                 if seed.get("pilot_analysis_last"):
                     set_setting("pilot_analysis_last", seed["pilot_analysis_last"])
-                log_audit("init_seed", {"source": "frozen_seed.json"})
-            except Exception as e:
-                pass
+                log_audit("init_seed", {"source": "frozen_seed.json", "threshold": 1.5})
+    except Exception:
+        pass
 
 def dumps(o):
     return json.dumps(o, separators=(",", ":"))

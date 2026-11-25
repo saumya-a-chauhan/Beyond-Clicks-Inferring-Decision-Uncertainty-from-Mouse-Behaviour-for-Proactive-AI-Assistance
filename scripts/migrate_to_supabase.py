@@ -118,6 +118,21 @@ def migrate(dest_url: str, wipe_dest: bool = False):
             """))
     print(" Sequences synchronized.")
 
+    # 5. Ensure frozen settings reflect updated 1.5 threshold & compulsory rule
+    seed_path = ROOT / "app" / "data" / "frozen_seed.json"
+    if seed_path.exists():
+        import json
+        with open(seed_path, "r", encoding="utf-8") as f:
+            seed = json.load(f)
+        with dest_engine.begin() as dest_conn:
+            for k in ("frozen", "detector", "pilot_analysis_last"):
+                if seed.get(k):
+                    dest_conn.execute(text("""
+                        INSERT INTO settings (key, value) VALUES (:k, :v)
+                        ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value
+                    """), {"k": k, "v": json.dumps(seed[k])})
+        print(" Updated frozen settings in Supabase to threshold 1.5 and compulsory rule.")
+
     print(f"\n Migration complete! Total rows copied: {total_migrated}")
     print(" The main study is ready and pilot settings are frozen on Supabase.\n")
     return True
