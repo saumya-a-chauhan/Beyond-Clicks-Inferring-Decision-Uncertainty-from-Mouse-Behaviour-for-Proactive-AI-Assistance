@@ -209,6 +209,30 @@ def pilot_analysis(include_sim=False):
         fires = sum(len(simulate(it["ticks"], cfg, "avg", thr)) for it in all_items)
         c4_rate = round(fires / (total_ms / 60000.0), 3)
 
+    # at-least-once rule on the pilot rounds: Smart (score >= extra_threshold after the wait) vs the matched
+    # Random moment (same wait, score not used); both on top of the main stage at the chosen threshold
+    extra = None
+    if thr is not None:
+        margin = SELECTION_RULE["match_margin_ms"]
+
+        def staged(mode, c):
+            out = {"rounds": len(all_items), "rounds_with_popup": 0, "popups": 0, "right": 0,
+                   "extra_popups": 0, "extra_right": 0}
+            for it in all_items:
+                fires = simulate(it["ticks"], c, "avg", thr, mode=mode, extra=True, stages=True)
+                out["rounds_with_popup"] += bool(fires)
+                for t, stage in fires:
+                    ok = any(a - margin <= t <= b + margin for a, b in it["labels"])
+                    out["popups"] += 1
+                    out["right"] += ok
+                    if stage == "extra":
+                        out["extra_popups"] += 1
+                        out["extra_right"] += ok
+            return out
+        extra = {"after_s": cfg["extra_after_s"], "threshold": cfg["extra_threshold"],
+                 "smart": staged("detector", cfg),
+                 "matched_moment": staged("random", dict(cfg, c4_rate_per_min=0))}
+
     # label lag: cross-correlation between the main score and the 'unsure' indicator
     lags = list(range(-10, 11))   # in ticks of 0.5 s
     corr = []
@@ -255,6 +279,7 @@ def pilot_analysis(include_sim=False):
         "sweeps": sweeps, "chosen": chosen, "loo": loo,
         "chance_precision": chance,
         "c4_rate_per_min": c4_rate,
+        "extra": extra,
         "label_durations": {"median_s": st.median(durations) if durations else None, "n": len(durations)},
         "detection_delay_s": (cfg["window_ms"] + cfg["persistence_ticks"] * cfg["tick_ms"]) / 1000.0,
         "labels_per_task_mean": st.mean(n_labels) if n_labels else None,
@@ -408,7 +433,10 @@ def main_results(include_sim=False):
         yes, lo, hi = wilson(k, len(ans))
         acc = [p for p in v if p["choice"] in ("compare", "explain", "general")]
         match = [p for p in acc if p["choice"] == p["predicted_type"]]
-        pop_rows[c] = {"n_popups": len(v), "answered": len(ans), "yes_rate": yes, "yes_lo": lo, "yes_hi": hi,
+        ex = [p for p in ans if p.get("stage") == "extra"]
+        pop_rows[c] = {"n_popups": len(v), "n_extra": sum(1 for p in v if p.get("stage") == "extra"),
+                       "extra_yes_rate": (sum(1 for p in ex if p["unsure_answer"] == "yes") / len(ex)) if ex else None,
+                       "answered": len(ans), "yes_rate": yes, "yes_lo": lo, "yes_hi": hi,
                        "accept_rate": (len(acc) / len(v)) if v else None,
                        "type_match_rate": (len(match) / len(acc)) if acc else None,
                        "by_type": dict(_count(p["choice"] or "none" for p in v)),

@@ -20,7 +20,7 @@ class LiveTask:
         self.tl = Timeline()
         self.seen = SeenTracker(phone_ids, cfg["seen_card_ms"])
         mode = MODE.get(condition)
-        self.rule = TriggerRule(cfg, mode=mode, seed=task_id) if mode else None
+        self.rule = TriggerRule(cfg, mode=mode, seed=task_id, extra=True) if mode else None
         self.next_tick = cfg["tick_ms"]
         self.last_tick = None
         self.lock = threading.Lock()

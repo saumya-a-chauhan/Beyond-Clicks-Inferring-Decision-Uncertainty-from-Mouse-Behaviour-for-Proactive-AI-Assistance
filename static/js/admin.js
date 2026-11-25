@@ -403,6 +403,12 @@ function renderPilot(r, o, out) {
         <li>Pop-ups per minute at the chosen threshold (used for the random condition): <b>${num(r.c4_rate_per_min, 2)}</b></li></ul>
         <canvas id="lag"></canvas>`)}
     </div>
+    ${r.extra ? box("At-least-once rule (extra pop-up)", `<p class="small">If a round has had no pop-up ${r.extra.after_s} s after all phones were seen, Smart shows one at the first moment the score is at least ${num(r.extra.threshold, 2)}; Random shows one at that same ${r.extra.after_s} s moment without looking at the score. Simulated on the pilot rounds (pop-up "right" = within 3 s of a marked unsure moment):</p>` + table([
+        ["", x => x.name], ["Rounds with a pop-up", x => `${x.d.rounds_with_popup} / ${x.d.rounds}`],
+        ["All pop-ups right", x => x.d.popups ? `${x.d.right} / ${x.d.popups} (${pct(x.d.right / x.d.popups)})` : "–"],
+        ["Extra pop-ups right", x => x.d.extra_popups ? `${x.d.extra_right} / ${x.d.extra_popups} (${pct(x.d.extra_right / x.d.extra_popups)})` : "–"]],
+        [{ name: "Smart (score used)", d: r.extra.smart }, { name: "Same moment, score not used", d: r.extra.matched_moment }])
+        + `<p class="small muted">Chance level: ${pct(r.chance_precision)}. The difference between the two rows is what the hesitation score adds beyond timing.</p>`) : ""}
     <div class="grid2">
       ${box("Cursor speed histogram (check of the 50 px/s resting cut-off)", `<canvas id="speed"></canvas>`, "The dip between 'still' and 'moving' should be near the dashed line.")}
       ${box("Minimum spreads from pilot baselines", table([["Sign", s => s], ["Minimum spread (median of pilot spreads)", s => num(r.min_spread[s], 3)],

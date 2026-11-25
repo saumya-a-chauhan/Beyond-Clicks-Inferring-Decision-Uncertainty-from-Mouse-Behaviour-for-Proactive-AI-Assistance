@@ -237,7 +237,6 @@ class SeenTracker:
                     return True
         return False
 
-
 def robust_stats(values):
     """Median and 1.4826 * MAD (the 'modified z-score' spread, Iglewicz & Hoaglin 1993)."""
     vals = [v for v in values if v is not None]

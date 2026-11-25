@@ -37,9 +37,15 @@ def compute_ticks(m, s, phone_ids, base, cfg, t_end):
 
 
 class TriggerRule:
-    """mode: 'detector' (C3) or 'random' (C4). For offline simulation pop-ups close instantly."""
+    """mode: 'detector' (C3) or 'random' (C4). For offline simulation pop-ups close instantly.
 
-    def __init__(self, cfg, mode="detector", variant="avg", threshold=None, seed=0):
+    Main stage: C3 fires when the score has been >= threshold for persistence_ticks checks; C4 fires at random
+    with c4_rate_per_min. Extra stage (extra=True, the at-least-once rule): if a round has had no pop-up
+    extra_after_s seconds after phones were seen, C3 fires at the first check with score >= extra_threshold
+    and C4 fires at that same moment without looking at the score. Compulsory stage: if no pop-up has fired
+    by compulsory_s seconds in an AI round, C3 and C4 fire compulsorily to guarantee AI assistance."""
+
+    def __init__(self, cfg, mode="detector", variant="avg", threshold=None, seed=0, extra=False):
         self.cfg = cfg
         self.mode = mode
         self.variant = variant
@@ -50,6 +56,10 @@ class TriggerRule:
         self.last_dismissed = False
         self.open = False
         self.rng = random.Random(seed)
+        self.extra = extra and cfg.get("extra_after_s") is not None
+        self.compulsory_s = cfg.get("compulsory_s", 12)
+        self.seen_at = None
+        self.stage = None        # stage of the last pop-up: "main", "extra", or "compulsory"
 
     def blocked(self, t):
         if self.open or len(self.fired) >= self.cfg["max_popups"]:
@@ -63,15 +73,32 @@ class TriggerRule:
     def step(self, tick):
         """Return True if a pop-up should fire at this tick."""
         t = tick["t"]
-        above = tick["scores"][self.variant] >= self.thr
-        self.run = self.run + 1 if above else 0
-        if not tick["seen"] or self.blocked(t):
+        score = tick["scores"][self.variant]
+        self.run = self.run + 1 if score >= self.thr else 0
+        if tick["seen"] and self.seen_at is None:
+            self.seen_at = t
+
+        if self.blocked(t):
             return False
+
         if self.mode == "random":
             p = self.cfg["c4_rate_per_min"] * self.cfg["tick_ms"] / 60000.0
             fire = self.rng.random() < p
         else:
-            fire = self.run >= self.cfg["persistence_ticks"]
+            fire = tick["seen"] and (self.run >= self.cfg["persistence_ticks"])
+
+        self.stage = "main"
+
+        # At-least-once rule
+        if not fire and self.extra and not self.fired:
+            if self.seen_at is not None and t - self.seen_at >= self.cfg.get("extra_after_s", 8) * 1000:
+                fire = self.mode == "random" or score >= self.cfg.get("extra_threshold", 0.8)
+                self.stage = "extra"
+            # Compulsory fallback: guarantee AI triggers in AI round
+            if not fire and self.compulsory_s and t >= self.compulsory_s * 1000:
+                fire = True
+                self.stage = "compulsory"
+
         if fire:
             self.fired.append(t)
             self.last_fire = t
@@ -83,9 +110,11 @@ class TriggerRule:
         self.last_dismissed = bool(dismissed)
 
 
-def simulate(ticks, cfg, variant="avg", threshold=None, mode="detector", seed=0):
-    rule = TriggerRule(cfg, mode=mode, variant=variant, threshold=threshold, seed=seed)
-    return [tk["t"] for tk in ticks if rule.step(tk)]
+def simulate(ticks, cfg, variant="avg", threshold=None, mode="detector", seed=0, extra=False, stages=False):
+    """Pop-up times for a finished round (stages=True: (time, "main" | "extra") pairs)."""
+    rule = TriggerRule(cfg, mode=mode, variant=variant, threshold=threshold, seed=seed, extra=extra)
+    out = [(tk["t"], rule.stage) for tk in ticks if rule.step(tk)]
+    return out if stages else [t for t, _ in out]
 
 
 def popup_content(tick, mode, rng=None):

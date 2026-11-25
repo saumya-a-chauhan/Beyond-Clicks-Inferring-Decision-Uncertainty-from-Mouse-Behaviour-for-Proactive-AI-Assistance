@@ -1,11 +1,11 @@
 {
   "frozen": {
     "frozen": true,
-    "frozen_at": "2026-11-24 14:10:50.792723+00:00",
-    "threshold": 1.75,
-    "note": "Pilot analysis completed with 6 participants. Threshold selected by pre-registered rule.",
+    "frozen_at": "2026-11-26 00:00:00+00:00",
+    "threshold": 1.5,
+    "note": "Pilot analysis completed with 6 participants. Threshold updated to 1.5 with compulsory trigger.",
     "proposal": {
-      "threshold": 1.75,
+      "threshold": 1.5,
       "min_spread": {
         "B": 0.5,
         "F": 0.3,
@@ -22,12 +22,12 @@
       "tick_ms": 500,
       "window_ms": 3000,
       "lookback_ms": 10000,
-      "persistence_ticks": 4,
+      "persistence_ticks": 1,
       "rest_speed_px_s": 50.0,
       "rest_point_ms": 150,
       "visit_min_ms": 200,
       "min_move_px": 30.0,
-      "seen_card_ms": 1000,
+      "seen_card_ms": 350,
       "z_cap": 5.0,
       "min_spread": {
         "B": 0.5,
@@ -36,10 +36,13 @@
         "W": 0.15,
         "S": 0.5
       },
-      "threshold": 1.75,
+      "threshold": 1.5,
       "cooldown_s": 45,
       "dismiss_cooldown_s": 90,
       "max_popups": 3,
+      "extra_after_s": 8,
+      "extra_threshold": 0.8,
+      "compulsory_s": 12,
       "c4_rate_per_min": 0.298
     }
   },
@@ -47,12 +50,12 @@
     "tick_ms": 500,
     "window_ms": 3000,
     "lookback_ms": 10000,
-    "persistence_ticks": 4,
+    "persistence_ticks": 1,
     "rest_speed_px_s": 50.0,
     "rest_point_ms": 150,
     "visit_min_ms": 200,
     "min_move_px": 30.0,
-    "seen_card_ms": 1000,
+    "seen_card_ms": 350,
     "z_cap": 5.0,
     "min_spread": {
       "B": 0.5,
@@ -61,15 +64,18 @@
       "W": 0.15,
       "S": 0.5
     },
-    "threshold": 1.75,
+    "threshold": 1.5,
     "cooldown_s": 45,
     "dismiss_cooldown_s": 90,
     "max_popups": 3,
+    "extra_after_s": 8,
+    "extra_threshold": 0.8,
+    "compulsory_s": 12,
     "c4_rate_per_min": 0.298
   },
   "pilot_analysis_last": {
     "proposal": {
-      "threshold": 1.75,
+      "threshold": 1.5,
       "min_spread": {
         "B": 0.5,
         "F": 0.3,
@@ -83,7 +89,7 @@
     "n_tasks": 24,
     "include_simulated": false,
     "chosen": {
-      "avg": 1.75,
+      "avg": 1.5,
       "max": null,
       "B": null,
       "I": null

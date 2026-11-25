@@ -110,6 +110,7 @@ popups = Table(
     Column("task_id", Integer, ForeignKey("tasks.id", ondelete="CASCADE"), index=True),
     Column("t_ms", Integer),
     Column("source", String(12)),          # detector | random
+    Column("stage", String(16)),           # main | extra | compulsory
     Column("predicted_type", String(12)),  # compare | explain | general
     Column("pair", Text),                  # JSON [phoneId, phoneId]
     Column("spec", String(16)),
@@ -187,8 +188,20 @@ def now():
     return datetime.now(timezone.utc)
 
 
+MIGRATIONS = [("popups", "stage", "VARCHAR(16)")]
+
+
 def init_db():
     md.create_all(engine)
+    # Apply schema migrations for existing databases
+    try:
+        have = {t: {c["name"] for c in inspect(engine).get_columns(t)} for t, _, _ in MIGRATIONS}
+        with engine.begin() as c:
+            for table, col, typ in MIGRATIONS:
+                if col not in have.get(table, set()):
+                    c.execute(text(f"ALTER TABLE {table} ADD COLUMN {col} {typ}"))
+    except Exception:
+        pass
     # If the database has no frozen settings (e.g. fresh Supabase instance),
     # seed the frozen pilot analysis and threshold so the main study is immediately unlocked.
     frozen = get_setting("frozen")
@@ -207,7 +220,6 @@ def init_db():
                 log_audit("init_seed", {"source": "frozen_seed.json"})
             except Exception as e:
                 pass
-
 
 def dumps(o):
     return json.dumps(o, separators=(",", ":"))

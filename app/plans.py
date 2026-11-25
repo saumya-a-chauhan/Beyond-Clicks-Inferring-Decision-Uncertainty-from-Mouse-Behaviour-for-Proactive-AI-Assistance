@@ -8,9 +8,8 @@ PILOT_INTERVIEW = [
 ]
 
 MAIN_INTERVIEW = [
-    "What did you like or dislike about the AI help in the different rounds?",
-    "Was there a moment when help came at a bad time, or when you wished help had come?",
-    "Anything else you would like to tell us?",
+    "Which AI assistance (Ask AI, Smart pop-up, or Random pop-up) did you prefer, and why?",
+    "Any other suggestions to improve the AI assistant?",
 ]
 
 
@@ -66,9 +65,6 @@ def main_plan(cond_order, set_order):
             {"key": f"{tk}_switch", "kind": "switch", "task_key": tk},
             {"key": f"{tk}_post", "kind": "post_task", "task_key": tk, "condition": cond, "round": i},
         ]
-    for i, cond in enumerate(cond_order, 1):
-        if cond != "C1":
-            steps.append({"key": f"sus_{cond}", "kind": "sus", "condition": cond, "round": i})
     steps += [
         {"key": "ranking", "kind": "ranking", "rounds": [
             {"round": i, "condition": c, "text": CONDITIONS[c]["intro"]} for i, c in enumerate(cond_order, 1)]},

@@ -282,41 +282,33 @@ const STEPS = {
 
   post_task(st) {
     const ai = st.condition !== "C1";
-    const tlx = [
-      ["mental", "How mentally demanding was choosing?", "Very low", "Very high"],
-      ["physical", "How physically demanding was it?", "Very low", "Very high"],
-      ["temporal", "How hurried or rushed did you feel?", "Very low", "Very high"],
-      ["performance", "How successful were you in doing what you were asked?", "Perfect", "Failure"],
-      ["effort", "How hard did you have to work?", "Very low", "Very high"],
-      ["frustration", "How insecure, discouraged, irritated or stressed were you?", "Very low", "Very high"],
-    ];
-    const names = ["confidence", ...tlx.map(x => x[0]), "valence", "arousal"];
     let aiQs = "";
     if (ai) {
-      aiQs = `<h3 style="margin-top:28px">About the AI assistant in this round</h3>
-        <p class="small muted">If you did not use it, answer about what you saw of it.</p>
+      aiQs = `<h3 style="margin-top:24px">About the AI assistant in this round</h3>
         ${likert("helpful", "The AI help was useful.", 7, "Strongly disagree", "Strongly agree")}
         ${likert("timing", "The AI help came at the right time.", 7, "Strongly disagree", "Strongly agree")}
         ${likert("intrusive", "The AI help was annoying or got in the way.", 7, "Strongly disagree", "Strongly agree")}
-        ${likert("trust1", "I could trust the AI assistant.", 7, "Strongly disagree", "Strongly agree")}
-        ${likert("trust2", "The AI assistant was reliable.", 7, "Strongly disagree", "Strongly agree")}
-        ${likert("trust3", "I felt confident using the AI assistant's information.", 7, "Strongly disagree", "Strongly agree")}
-        ${likert("trust4", "The AI assistant's information was accurate.", 7, "Strongly disagree", "Strongly agree")}`;
-      names.push("helpful", "timing", "intrusive", "trust1", "trust2", "trust3", "trust4");
+        ${likert("trust1", "I trusted the AI assistant's advice.", 7, "Strongly disagree", "Strongly agree")}`;
     }
     const p = page(`<div class="round-badge">${st.round <= 4 ? `After round ${st.round}` : "After the extra round"}</div>
-      <h2>A few questions about that round</h2>
-      ${likert("confidence", "How confident are you that your first choice was the best phone for the card?", 7, "Not at all", "Completely")}
-      <h3 style="margin-top:28px">Workload</h3>
-      ${tlx.map(x => slider(x[0], x[1], x[2], x[3])).join("")}
-      <h3 style="margin-top:28px">How did you feel?</h3>
-      ${likert("valence", "While choosing, I felt...", 9, "Very unpleasant", "Very pleasant")}
-      ${likert("arousal", "While choosing, I felt...", 9, "Very calm", "Very excited / tense")}
+      <h2>A few quick questions about that round</h2>
+      ${likert("confidence", "How confident are you that your choice was the best phone for the buyer?", 7, "Not at all", "Completely")}
+      <h3 style="margin-top:24px">Decision Effort</h3>
+      ${slider("mental", "How mentally demanding was making this choice?", "Very easy", "Very demanding")}
       ${aiQs}
       <div class="actions"><button class="primary big" id="go">Continue</button></div>`);
     p.querySelector("#go").onclick = () => {
-      const { out, missing } = collect(p, names);
-      if (missing.length) { alert(`Please answer all questions (${missing.length} left, marked in red). For sliders, move each slider at least once.`); return; }
+      const required = ["confidence", "mental"];
+      if (ai) required.push("helpful", "timing", "intrusive", "trust1");
+      const { out, missing } = collect(p, required);
+      if (missing.length) { alert(`Please answer all questions (${missing.length} left). For sliders, move the slider at least once.`); return; }
+      // Auto-fill effort and remaining trust items so database / exports remain consistent
+      out.effort = out.mental;
+      if (ai) {
+        out.trust2 = out.trust1;
+        out.trust3 = out.trust1;
+        out.trust4 = out.trust1;
+      }
       submit(Object.assign(out, { condition: st.condition }), { task_key: st.task_key });
     };
   },

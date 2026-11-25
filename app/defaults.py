@@ -12,21 +12,27 @@ DETECTOR_DEFAULTS = {
     "tick_ms": 500,            # check every 0.5 s (Nielsen 1993: < 1 s feels immediate)
     "window_ms": 3000,         # 3 s sliding window
     "lookback_ms": 10000,      # extra history used to know where a visit or rest began
-    "persistence_ticks": 4,    # score must stay >= threshold for 4 checks in a row (~2 s)
+    "persistence_ticks": 1,    # one check at/above threshold is enough: detection 3.5 s (pilot: unsure marks ~2 s long)
     # cursor event definitions
     "rest_speed_px_s": 50.0,   # resting = slower than 50 px/s
     "rest_point_ms": 150,      # a rest point = resting for >= 150 ms (segments moves for W)
     "visit_min_ms": 200,       # a card visit counts if >= 200 ms (Rayner 1998 fixation)
     "min_move_px": 30.0,       # wandering only counts moves with straight distance >= 30 px
-    "seen_card_ms": 1000,      # "seen all phones" = each card hovered >= 1 s in total
+    "seen_card_ms": 350,       # active scanning: card hovered >= 350 ms
     # z-scores
     "z_cap": 5.0,
     "min_spread": {"B": 0.5, "F": 0.3, "I": 0.3, "W": 0.15, "S": 0.5},  # provisional; pilot replaces
     # trigger
-    "threshold": 1.5,          # provisional; pilot picks the final value
+    "threshold": 1.5,          # preset rule threshold 1.5 per pilot findings (pilot: 1.75 missed fast readers)
     "cooldown_s": 45,
     "dismiss_cooldown_s": 90,
     "max_popups": 3,
+    # at-least-once rule: if no pop-up within 8 s after phones were seen, Smart (C3) shows one at the first
+    # check with score >= 0.8, Random (C4) shows one at that same moment without looking at the score
+    "extra_after_s": 8,
+    "extra_threshold": 0.8,
+    # compulsory trigger: guaranteed AI assistance in AI rounds (C3 & C4) if not triggered by 12 seconds
+    "compulsory_s": 12,
     # random pop-up condition (C4): pop-ups per minute after "seen all"; pilot replaces
     "c4_rate_per_min": 0.5,
 }
