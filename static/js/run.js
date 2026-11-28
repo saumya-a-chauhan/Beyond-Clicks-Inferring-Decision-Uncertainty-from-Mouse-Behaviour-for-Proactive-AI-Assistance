@@ -166,7 +166,7 @@ const STEPS = {
     const onPtr = e => types.add(e.pointerType);
     window.addEventListener("pointermove", onPtr);
     const w = window.innerWidth, h = window.innerHeight;
-    const okW = w >= 1200;
+    const okW = w >= 1100;
     const p = page(`
       <h2>Quick setup check</h2>
       <ul>

@@ -118,5 +118,5 @@ Excluded participants stay in the export but are left out of analyses.
 | The page does not open | The website is not running. Double-click `start_study.bat` and keep its window open. |
 | AI answers say "not available right now" | Both LLM providers failed; written fallback answers are shown. Check the keys in `.env` (restart `start_study.bat` after editing it), and run the AI provider check. |
 | "Session not found" | The browser data was cleared. Start a new session; delete or exclude the broken one. |
-| Window too small | Use full screen (F11). The setup check needs at least 1200 px width. |
+| Window too small | Use full screen (F11). The setup check needs at least 1100 px width. |
 | Main study button is locked | Settings are not frozen yet (step 2). |
