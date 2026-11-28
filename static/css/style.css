@@ -210,3 +210,10 @@ pre.json { background: #0f172a; color: #e2e8f0; padding: 14px; border-radius: 10
 .notice.bad { background: #fdecec; border-color: #f3c2c2; color: #7f1d1d; }
 .up-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 8px 0; }
 .up-row b { min-width: 80px; }
+
+/* researcher live view */
+.debug-view { position: fixed; left: 16px; bottom: 16px; z-index: 99998; width: 360px; background: rgba(20, 33, 61, .93); color: #F7F6F2;
+  font: 13px/1.45 'Inter', system-ui, sans-serif; border-radius: 12px; padding: 12px 14px; pointer-events: none; }
+.debug-view .dv-bar { height: 8px; background: rgba(255,255,255,.18); border-radius: 4px; margin: 4px 0 6px; overflow: hidden; }
+.debug-view .dv-bar i { display: block; height: 100%; background: #F2A66E; }
+.debug-view .dv-z { color: #C9D3E6; }

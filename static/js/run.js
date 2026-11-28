@@ -223,6 +223,7 @@ const STEPS = {
       AiPanel.showPopup(pop, ctx);
     };
     logger = new Logger(t.task_id, S.token, t.time_offset_ms, t.next_seq, r => onPopup(r && r.popup));
+    if (new URLSearchParams(location.search).get("debug") === "1") logger.onDebug = d => DebugView.show(d);
 
     Shop.render(document.getElementById("shoproot"), {
       set: t.set, card_order: t.card_order, header, prompt: prompts[st.task_kind],

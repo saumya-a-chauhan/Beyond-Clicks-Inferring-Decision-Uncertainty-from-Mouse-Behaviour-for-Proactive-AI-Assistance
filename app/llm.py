@@ -18,13 +18,21 @@ from .phones import catalog, get_set
 
 SYSTEM = (
     "You are a shopping assistant inside a research study about choosing phones. "
-    "Use ONLY the phone data provided below; never invent or guess specs, prices or test results. "
+    "Use ONLY the phone data provided; never invent or guess specs, prices or test results. "
     "If something is not in the data, say you do not have that information. "
-    "Explain trade-offs in plain, friendly English for a non-technical buyer, relating them to the buyer's stated needs. "
-    "Use the measured values in the specs (screen-on time, low-light limit, zoom, brightness, free space, speed after 30 min) to explain what the headline numbers really mean; convert values given in different units (minutes and hours; GB, TB and MB; millions and Indian lakhs) to the same unit before comparing, and remember that lower lux and lower f-numbers are better. "
-    "Do NOT tell the buyer which phone to buy and do not rank the phones; help them understand so they can decide. "
-    "Keep it under 110 words. Write numbers as digits with their units (for example 12 h 40 min, 2 lux, Rs 24,999). Plain text only: no markdown, no headings, no bold. "
-    "Use 3 to 5 short lines, each starting with '- '."
+    "Answer exactly what is asked, directly, in plain friendly English. "
+    "If the question asks which phone is best (overall, for the buyer, or for one thing such as zoom, battery, "
+    "storage, gaming or photos), start by naming that phone, then give the 1 to 3 facts from the data that decide it, "
+    "compared with the closest alternative. Do not describe every phone; mention only the phones that matter for the "
+    "answer. "
+    "Judge with the measured values in the specs (screen-on time, low-light limit, zoom, brightness, free space, speed "
+    "after 30 min), not the headline numbers. Convert different units to the same unit before comparing (minutes and "
+    "hours; GB, TB and MB; millions and Indian lakhs). Lower lux and lower f-numbers are better. Optical zoom stays "
+    "sharp, digital zoom only crops: if a phone zooms further than its measured sharp limit, say both (for example: "
+    "zooms 10x, but faces stay sharp only up to 8x). For questions about the buyer's needs, respect the budget and the "
+    "priorities on the buyer's card. "
+    "Keep it under 90 words. Write numbers as digits with their units (for example 12 h 40 min, 2 lux, Rs 24,999). "
+    "Plain text only: no markdown, no headings, no bold. Use 2 to 4 short lines, each starting with '- '."
 )
 
 GLOSSARY = {
@@ -40,11 +48,13 @@ GLOSSARY = {
 def set_context(set_id):
     s = get_set(set_id)
     labels = catalog()["spec_labels"]
-    lines = [f"Buyer: {s['card']['persona']} {s['card']['text']}", "Phones:"]
+    lines = [f"Buyer: {s['card']['persona']} {s['card']['text']}", "Phones on screen (every spec the buyer can see):"]
     for p in s["phones"]:
         # only what the participant can see while shopping (lab table and reviews come after the choice)
         specs = "; ".join(f"{labels[k]}: {v}" for k, v in p["specs"].items())
-        lines.append(f"* {p['name']} - {specs}")
+        lines.append(f"* {p['name']} - colours: {', '.join(p['colours'])}; {specs}")
+    lines.append("How to read the specs:")
+    lines += [f"* {labels.get(k, k)}: {v}" for k, v in GLOSSARY.items()]
     return "\n".join(lines)
 
 
@@ -60,17 +70,18 @@ def build_prompt(set_id, mode, args):
     labels = catalog()["spec_labels"]
     if mode == "compare":
         a, b = (args.get("pair") or [None, None])[:2]
-        task = (f"Compare {_name(set_id, a)} and {_name(set_id, b)} for this buyer. "
-                "Point out which differences matter most for the buyer's priorities and budget, using the measured values.")
+        task = (f"Compare {_name(set_id, a)} and {_name(set_id, b)} for this buyer: say which of the two fits the "
+                "buyer's priorities and budget better, and give the 1 to 3 measured differences that decide it.")
     elif mode == "explain":
         spec = args.get("spec") or "battery"
         task = (f"Explain in simple words what the '{labels.get(spec, spec)}' line means and how to compare it fairly "
                 "across these phones for this buyer (mention the relevant measured value).")
     elif mode == "ask":
         q = (args.get("question") or "").strip()[:400]
-        task = f"Answer the buyer's question: \"{q}\""
+        task = f"The buyer asks: \"{q}\"\nAnswer this question directly, as the instructions say."
     else:
-        task = "Give a short overview of the main trade-offs between these phones for this buyer's priorities and budget."
+        task = ("Give a short overview for this buyer: which phone fits the card best and why, and the main trade-off "
+                "against the strongest alternative.")
     return f"{ctx}\n\nTask: {task}"
 
 

@@ -181,7 +181,7 @@ class Logger {
   }
   flush(final) {
     if (this.m.length || this.s.length || this.c.length || !final) {
-      this.queue.push({ token: this.token, seq: this.seq++, now: this.now(), m: this.m, s: this.s, c: this.c });
+      this.queue.push({ token: this.token, seq: this.seq++, now: this.now(), m: this.m, s: this.s, c: this.c, debug: !!this.onDebug });
       this.m = []; this.s = []; this.c = [];
     }
     return this.drain();
@@ -195,6 +195,7 @@ class Logger {
         try {
           const r = await API.post(`/api/task/${this.taskId}/events`, b);
           this.queue.shift();
+          if (r && r.debug && this.onDebug) this.onDebug(r.debug);
           if (r && r.popup && !this.stopped && this.onResponse) this.onResponse(r);
         } catch (e) {
           if (e.status && e.status < 500 && e.status !== 408 && e.status !== 429) { this.queue.shift(); continue; }
@@ -249,6 +250,8 @@ const AiPanel = {
   },
   /* Pop-up from the detector (C3) or random timer (C4). ctx: {token, now(), set, demo} */
   showPopup(pop, ctx) {
+    // at Buy: no "were you unsure?" question (it is about a moment, and this pop-up comes at the decision itself)
+    if (pop.stage === "at_buy") { this._offer(pop, ctx); return; }
     const n = this._mount(`
       <div class="ai-head"><span style="font-size:1.15rem">🤖</span> <b>AI Assistant</b></div>
       <p><b>Quick question: were you unsure just now?</b></p>
@@ -265,7 +268,8 @@ const AiPanel = {
     const exp = `<button data-c="explain">Explain "${esc(specLabel)}"</button>`;
     const gen = `<button data-c="general">Give me a quick overview</button>`;
     const first = pop.predicted_type === "compare" ? [cmp, exp, gen] : pop.predicted_type === "explain" ? [exp, cmp, gen] : [gen, cmp, exp];
-    const lead = pop.predicted_type === "compare" ? `Torn between ${esc(names[0] || "these phones")} and ${esc(names[1] || "another")}? I can help.`
+    const lead = pop.stage === "at_buy" ? "Before you buy, want a quick second opinion?"
+      : pop.predicted_type === "compare" ? `Torn between ${esc(names[0] || "these phones")} and ${esc(names[1] || "another")}? I can help.`
       : pop.predicted_type === "explain" ? `Want "${esc(specLabel)}" explained?` : "Need help deciding?";
     const n = this._mount(`
       <div class="ai-head"><span style="font-size:1.15rem">🤖</span> <b>AI Assistant</b> <button class="x" data-c="dismiss" title="Close">No thanks</button></div>
@@ -338,5 +342,27 @@ const AiPanel = {
         x.parentElement.after(again);
       } catch (e) { if (g === this.gen) this._answer("Sorry, the assistant could not answer right now.", () => {}); }
     });
+  },
+};
+
+/* ---------- researcher live view (/run?debug=1, only answered for a logged-in researcher) ---------- */
+const DebugView = {
+  node: null,
+  show(d) {
+    if (!d) return;
+    if (!this.node) {
+      this.node = el(`<div class="debug-view" data-zone="ui:debug"></div>`);
+      document.body.appendChild(this.node);
+    }
+    const s = x => (x == null ? "–" : x);
+    const since = d.seen && d.seen_at != null ? ((d.t - d.seen_at) / 1000).toFixed(1) : null;
+    const pct = Math.max(0, Math.min(100, 100 * d.score / Math.max(d.threshold, 0.01)));
+    const rule = d.mode === "random"
+      ? `Random: first pop-up ${s(d.yoked_delay_s)} s after all phones seen`
+      : `Smart: pop-up at ${d.threshold}; after ${d.second_after_s} s also at ${d.second_bar}`;
+    this.node.innerHTML = `<b>Researcher view</b> · ${esc(rule)}<br>
+      Score <b>${d.score}</b> / ${d.threshold}<div class="dv-bar"><i style="width:${pct}%"></i></div>
+      All phones seen: <b>${d.seen ? `yes (${since} s ago)` : "not yet"}</b> · pop-ups ${d.popups}${d.waiting ? " · waiting" : ""}<br>
+      <span class="dv-z">${Object.entries(d.z).map(([k, v]) => `${k} ${v}`).join(" · ")}</span>`;
   },
 };

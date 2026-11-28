@@ -279,6 +279,27 @@ class Events(BaseModel):
     m: list = []
     s: list = []
     c: list = []
+    debug: bool = False        # researcher live view (/run?debug=1), answered only for a logged-in researcher
+
+
+def _is_admin(request):
+    try:
+        return auth.require_admin(request)
+    except HTTPException:
+        return False
+
+
+def _debug_view(lt):
+    """What the Smart/Random rule sees right now (researcher live view only)."""
+    tk, r = lt.last_tick, lt.rule
+    if tk is None or r is None:
+        return None
+    cfg = r.cfg
+    return {"t": tk["t"], "score": round(tk["scores"]["avg"], 2), "threshold": r.thr,
+            "second_bar": cfg["extra_threshold"], "second_after_s": cfg["extra_after_s"],
+            "seen": bool(tk["seen"]), "seen_at": tk.get("seen_at"), "z": {k: round(v, 2) for k, v in tk["z"].items()},
+            "popups": len(r.fired), "waiting": r.blocked(tk["t"]), "mode": r.mode,
+            "yoked_delay_s": r.delay_ms / 1000 if r.mode == "random" else None}
 
 
 def _live_loader(conn, p, t):
@@ -289,7 +310,7 @@ def _live_loader(conn, p, t):
 
 
 @app.post("/api/task/{task_id}/events")
-def api_events(task_id: int, body: Events):
+def api_events(task_id: int, body: Events, request: Request):
     if len(body.m) + len(body.s) + len(body.c) > 20000:
         raise HTTPException(413, "Batch too large")
     with db.engine.begin() as conn:
@@ -312,9 +333,10 @@ def api_events(task_id: int, body: Events):
             lt.add(body.m, body.s)
             live.restore(lt, prev)
         fired = lt.process(int(body.now))
-    if fired is None:
-        return {"ok": True}
-    return _new_popup(t, fired, lt.rule.stage, fired["t"], lt.rule.cfg["cooldown_s"])
+    out = {"ok": True} if fired is None else _new_popup(t, fired, lt.rule.stage, fired["t"], lt.rule.cfg["cooldown_s"])
+    if body.debug and _is_admin(request):
+        out["debug"] = _debug_view(lt)
+    return out
 
 
 def _new_popup(t, tick, stage, t_ms, cooldown_s):
@@ -336,7 +358,7 @@ def _new_popup(t, tick, stage, t_ms, cooldown_s):
             zs=db.dumps(tick["z"]) if tick else None)).inserted_primary_key[0]
     labels = phones.catalog()["spec_labels"]
     return {"ok": True, "popup": {
-        "id": pop_id, "predicted_type": content["predicted_type"],
+        "id": pop_id, "predicted_type": content["predicted_type"], "stage": stage,
         "pair": [{"id": x, "name": name_of(t["set_id"], x)} for x in pair],
         "spec": {"key": spec, "label": labels.get(spec, spec)}}}
 
