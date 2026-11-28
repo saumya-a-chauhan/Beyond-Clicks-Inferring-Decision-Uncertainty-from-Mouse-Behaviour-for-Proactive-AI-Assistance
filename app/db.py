@@ -192,7 +192,8 @@ def now():
 MIGRATIONS = [("popups", "stage", "VARCHAR(16)")]
 
 # Frozen values set by settings revision 3 (app/defaults.py); min_spread B is the pilot median spread (0.74)
-REVISED_KEYS = ("threshold", "persistence_ticks", "seen_card_ms", "extra_after_s", "extra_threshold", "c4_rate_per_min")
+REVISED_KEYS = ("threshold", "persistence_ticks", "seen_card_ms", "extra_after_s", "extra_threshold", "c4_rate_per_min",
+                "cooldown_s", "dismiss_cooldown_s", "max_popups")
 PILOT_MIN_SPREAD = {"B": 0.7413, "F": 0.3, "I": 0.3, "W": 0.15, "S": 0.5}
 
 

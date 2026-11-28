@@ -185,7 +185,7 @@ def test_rule_rebuilt_mid_round_decides_like_a_long_lived_one():
             rule.seen_at = next((x["t"] for x in ticks[:k + 1] if x["seen"]), None)
             for t in fired:
                 rule.fired.append(t)
-                rule.last_fire = t
+                rule.last_fire = rule.last_close = t
             if rule.step(tk):
                 fired.append(tk["t"])
         assert fired == whole, mode

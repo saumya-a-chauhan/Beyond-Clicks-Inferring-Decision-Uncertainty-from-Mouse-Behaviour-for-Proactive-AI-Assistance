@@ -1,4 +1,4 @@
-# When the AI pop-up appears: final logic (settings revision 3)
+# When the AI pop-up appears: final logic (settings revision 4)
 
 All numbers below come from the 6 pilot participants (P01–P06, 24 rounds without AI, 40 self-marked "unsure"
 moments). A pop-up counts as **right** if it lands within 3 s of a moment the participant marked as unsure in the
@@ -16,8 +16,10 @@ round starts ──► looks at all 4 phones (each ≥ 1 s) ──► ...
      BOTH            Buy clicked and still no pop-up ──────────────────────► pop-up first (stage "at_buy")
 ```
 
-After the first pop-up: Smart can fire again when the score reaches 1.75, Random at random (0.71 per minute);
-at least 45 s apart (90 s after "No thanks"), at most 3 per round.
+Several pop-ups per round: whenever the score reaches 1.75 again, Smart pops up again; Random's later pop-ups come
+at random at Smart's pilot rate (0.43 per minute). Nothing fires while a pop-up is open; the next one can come
+**10 s after the previous one was closed** (20 s after "No thanks"; if the person asked for help and left the answer
+open, after ~25 s of reading), **up to 5 per round**.
 
 ## Every value and why
 
@@ -32,8 +34,9 @@ at least 45 s apart (90 s after "No thanks"), at most 3 per round.
 | **Second chance (Smart)** | **10 s after all seen, score ≥ 1.0** | With the threshold alone only 5 of 24 pilot rounds would have a pop-up. With this, 13 of 24, and **69% right vs 41%** for Random with the same timing. Waiting only 5 s gave more rounds (16) but Smart was then barely better than timing (56% vs 45%). 12 combinations were compared (wait 5 / 8 / 10 s × bar 0.5 / 0.75 / 1.0 × threshold 1.5 / 1.75). |
 | **Random timing** | yoked to Smart | Random's first pop-up comes at a delay after "all seen" drawn from Smart's own 13 pilot delays (0.5–17 s, mostly 10 s). So both conditions pop up equally often and at the same points in a round; **the only difference is whether the person's hesitation decided the moment**. That is what makes C3 vs C4 a fair test. |
 | **At Buy** | both conditions | If Buy is clicked before any pop-up, the pop-up comes first, the same in both conditions, so every AI round shows the assistant. These pop-ups are reported separately and left out of the Smart vs Random comparison, because they are identical by design. |
-| Cooldown | 45 s (90 s after "No thanks") | Time to read and use an answer (~25 s at 240 words/min, Brysbaert 2019) plus acting on it; dismissal means "not now" (Amershi et al. 2019). |
-| Max pop-ups | 3 per round | Interruptions cost attention (Bailey & Konstan 2006); about 1.5 unsure moments per pilot round. |
+| **Gap between pop-ups** | **10 s after the previous one was closed** (20 s after "No thanks") | Counted from closing, so reading the answer is not cut short (an open answer counts as ~25 s of reading: ~100 words at 240 words/min, Brysbaert 2019). The old 45 s counted from the pop-up itself, and rounds last ~50 s, so a second pop-up never happened. Pilot with a 10 s gap: 16 pop-ups instead of 13, **75% right**, and **all 3 later pop-ups landed on real unsure moments**. Doubling after "No thanks" respects "not now" (Amershi et al. 2019). |
+| **Max pop-ups** | **5 per round** | Upper safety limit against interrupting too often (Bailey & Konstan 2006); the pilot never needed more than 4. |
+| Random's later pop-ups | 0.43 per minute | Smart's pilot rate of second and later pop-ups, so both conditions pop up equally often. |
 
 ## What was wrong before (revision 2) and why it changed
 

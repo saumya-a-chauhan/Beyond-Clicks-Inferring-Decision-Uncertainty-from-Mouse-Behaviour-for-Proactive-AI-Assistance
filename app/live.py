@@ -5,6 +5,7 @@ import threading
 from sqlalchemy import select
 
 from . import db
+from .defaults import ANSWER_READING_S
 from .detector import TriggerRule, make_tick
 from .features import SeenTracker, Timeline
 
@@ -77,7 +78,7 @@ def get(task_id, loader):
 
 
 def popups_so_far(conn, task_id):
-    return conn.execute(select(db.popups.c.t_ms, db.popups.c.choice, db.popups.c.closed_ms)
+    return conn.execute(select(db.popups.c.t_ms, db.popups.c.choice, db.popups.c.choice_ms, db.popups.c.closed_ms)
                         .where(db.popups.c.task_id == task_id).order_by(db.popups.c.t_ms)).all()
 
 
@@ -87,12 +88,16 @@ def restore(lt, prev):
     if lt.rule is None:
         return
     r = lt.rule
-    r.fired, r.last_fire, r.last_dismissed, r.open = [], None, False, False
-    for t_ms, choice, closed in prev:
+    r.fired, r.last_fire, r.last_close, r.last_dismissed, r.open = [], None, None, False, False
+    for t_ms, choice, choice_ms, closed in prev:
         r.fired.append(t_ms)
         r.last_fire = t_ms
         r.last_dismissed = choice == "dismiss"
         r.open = closed is None and choice is None
+        if closed is not None:
+            r.last_close = closed
+        elif choice is not None:        # asked for help, answer still on screen: assume it is being read
+            r.last_close = (choice_ms or t_ms) + ANSWER_READING_S * 1000
 
 
 def drop(task_id):

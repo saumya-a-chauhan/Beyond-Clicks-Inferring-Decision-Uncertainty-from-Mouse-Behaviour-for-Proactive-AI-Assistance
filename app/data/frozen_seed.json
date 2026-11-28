@@ -13,7 +13,7 @@
         "W": 0.15,
         "S": 0.5
       },
-      "c4_rate_per_min": 0.711
+      "c4_rate_per_min": 0.43
     },
     "pilot_people": 6,
     "pilot_tasks": 24,
@@ -37,14 +37,14 @@
         "S": 0.5
       },
       "threshold": 1.75,
-      "cooldown_s": 45,
-      "dismiss_cooldown_s": 90,
-      "max_popups": 3,
+      "cooldown_s": 10,
+      "dismiss_cooldown_s": 20,
+      "max_popups": 5,
       "extra_after_s": 10,
       "extra_threshold": 1.0,
-      "c4_rate_per_min": 0.711
+      "c4_rate_per_min": 0.43
     },
-    "revision": 3
+    "revision": 4
   },
   "detector": {
     "tick_ms": 500,
@@ -65,12 +65,12 @@
       "S": 0.5
     },
     "threshold": 1.75,
-    "cooldown_s": 45,
-    "dismiss_cooldown_s": 90,
-    "max_popups": 3,
+    "cooldown_s": 10,
+    "dismiss_cooldown_s": 20,
+    "max_popups": 5,
     "extra_after_s": 10,
     "extra_threshold": 1.0,
-    "c4_rate_per_min": 0.711
+    "c4_rate_per_min": 0.43
   },
   "pilot_analysis_last": {
     "proposal": {

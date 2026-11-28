@@ -45,7 +45,9 @@ class TriggerRule:
     Random: yoked - (extra=True) first pop-up at all-seen + a delay drawn for this round from YOKED_DELAYS_S
                     (Smart's own pilot delays), score not used.
             main  - later pop-ups at random, c4_rate_per_min.
-    Both:   cooldown and max_popups. The at-Buy pop-up (no pop-up before Buy) is added by the server.
+    Both:   while a pop-up is open nothing else fires; the next one can come cooldown_s after it was closed
+            (dismiss_cooldown_s after "No thanks"), up to max_popups. The at-Buy pop-up (no pop-up before Buy) is
+            added by the server.
 
     Nothing depends on memory between requests except the pop-ups already shown, which the server restores from
     the database: every random draw is fixed by the round's seed and the check's time, and the all-seen time comes
@@ -59,6 +61,7 @@ class TriggerRule:
         self.run = 0
         self.fired = []          # list of fire times
         self.last_fire = None
+        self.last_close = None   # when the previous pop-up was closed (offline: at once)
         self.last_dismissed = False
         self.open = False
         self.seed = seed
@@ -70,9 +73,9 @@ class TriggerRule:
     def blocked(self, t):
         if self.open or len(self.fired) >= self.cfg["max_popups"]:
             return True
-        if self.last_fire is not None:
+        if self.last_close is not None:
             cd = self.cfg["dismiss_cooldown_s"] if self.last_dismissed else self.cfg["cooldown_s"]
-            if t - self.last_fire < cd * 1000:
+            if t - self.last_close < cd * 1000:
                 return True
         return False
 
@@ -101,6 +104,7 @@ class TriggerRule:
             self.stage = stage
             self.fired.append(t)
             self.last_fire = t
+            self.last_close = t
             self.last_dismissed = False
         return fire
 

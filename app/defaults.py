@@ -24,14 +24,14 @@ DETECTOR_DEFAULTS = {
     "min_spread": {"B": 0.5, "F": 0.3, "I": 0.3, "W": 0.15, "S": 0.5},  # provisional; pilot replaces
     # trigger (docs/DETECTOR.md, steps 6-7, has the reason for every value)
     "threshold": 1.75,         # picked by the pre-registered pilot rule (>= 70% right, <= 1 false alarm per round)
-    "cooldown_s": 45,
-    "dismiss_cooldown_s": 90,
-    "max_popups": 3,
+    "cooldown_s": 10,          # next pop-up possible 10 s after the previous one was closed (pilot: 2nd+ all right)
+    "dismiss_cooldown_s": 20,  # 20 s after "No thanks"
+    "max_popups": 5,
     # second chance (Smart): no pop-up 10 s after all phones were seen -> first check with score >= 1.0
     "extra_after_s": 10,
     "extra_threshold": 1.0,
     # Random (C4): first pop-up at "all seen" + a delay drawn from YOKED_DELAYS_S; later ones at this rate
-    "c4_rate_per_min": 0.711,
+    "c4_rate_per_min": 0.43,   # Random's later pop-ups: Smart's pilot rate of 2nd+ pop-ups per minute
 }
 
 # Delays (s after all phones were seen) of Smart's first pop-up in the 13 pilot rounds that had one, with the
@@ -42,10 +42,13 @@ YOKED_DELAYS_S = [0.5, 7.0, 7.5, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 11.5,
 # Frozen-settings revision applied once on start-up (app/db.py) and logged in the audit log. Participants keep the
 # settings they started with. Revision 3 replaces the 9-14 s timers of revision 2, which fired before people had seen
 # the phones and made Smart and Random identical.
-SETTINGS_REVISION = 3
-REVISION_NOTE = ("Revision 3: threshold 1.75 (pilot rule), detection in one check (3.5 s), second chance 10 s after "
+SETTINGS_REVISION = 4
+REVISION_NOTE = ("Revision 4: threshold 1.75 (pilot rule), detection in one check (3.5 s), second chance 10 s after "
                  "all phones seen at score >= 1.0, Random yoked to Smart's pilot timing, at-Buy pop-up in both; the "
-                 "9-14 s timers removed.")
+                 "9-14 s timers removed (rev. 3). Several pop-ups per round: next one 10 s after the previous was "
+                 "closed (20 s after No thanks), up to 5; Random's later pop-ups at 0.43/min (rev. 4).")
+# Reading time assumed when a participant asked for help but left the answer open: ~100 words at ~240 words/min
+ANSWER_READING_S = 25
 
 THRESHOLD_GRID = [1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 2.75, 3.0]
 
