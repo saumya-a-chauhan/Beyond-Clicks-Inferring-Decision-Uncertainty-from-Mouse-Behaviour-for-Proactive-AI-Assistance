@@ -2,18 +2,18 @@
   "frozen": {
     "frozen": true,
     "frozen_at": "2026-11-26 00:00:00+00:00",
-    "threshold": 1.5,
-    "note": "Pilot analysis completed with 6 participants. Threshold updated to 1.5 with compulsory trigger.",
+    "threshold": 1.75,
+    "note": "Pilot analysis completed with 6 participants (24 rounds). Threshold 1.75 picked by the pre-registered rule.",
     "proposal": {
-      "threshold": 1.5,
+      "threshold": 1.75,
       "min_spread": {
-        "B": 0.5,
+        "B": 0.7413,
         "F": 0.3,
         "I": 0.3,
         "W": 0.15,
         "S": 0.5
       },
-      "c4_rate_per_min": 0.298
+      "c4_rate_per_min": 0.711
     },
     "pilot_people": 6,
     "pilot_tasks": 24,
@@ -27,24 +27,24 @@
       "rest_point_ms": 150,
       "visit_min_ms": 200,
       "min_move_px": 30.0,
-      "seen_card_ms": 350,
+      "seen_card_ms": 1000,
       "z_cap": 5.0,
       "min_spread": {
-        "B": 0.5,
+        "B": 0.7413,
         "F": 0.3,
         "I": 0.3,
         "W": 0.15,
         "S": 0.5
       },
-      "threshold": 1.5,
+      "threshold": 1.75,
       "cooldown_s": 45,
       "dismiss_cooldown_s": 90,
       "max_popups": 3,
-      "extra_after_s": 4,
-      "extra_threshold": 0.8,
-      "compulsory_s": 10,
-      "c4_rate_per_min": 1.5
-    }
+      "extra_after_s": 10,
+      "extra_threshold": 1.0,
+      "c4_rate_per_min": 0.711
+    },
+    "revision": 3
   },
   "detector": {
     "tick_ms": 500,
@@ -55,23 +55,22 @@
     "rest_point_ms": 150,
     "visit_min_ms": 200,
     "min_move_px": 30.0,
-    "seen_card_ms": 350,
+    "seen_card_ms": 1000,
     "z_cap": 5.0,
     "min_spread": {
-      "B": 0.5,
+      "B": 0.7413,
       "F": 0.3,
       "I": 0.3,
       "W": 0.15,
       "S": 0.5
     },
-    "threshold": 1.5,
+    "threshold": 1.75,
     "cooldown_s": 45,
     "dismiss_cooldown_s": 90,
     "max_popups": 3,
-    "extra_after_s": 4,
-    "extra_threshold": 0.8,
-    "compulsory_s": 10,
-    "c4_rate_per_min": 1.5
+    "extra_after_s": 10,
+    "extra_threshold": 1.0,
+    "c4_rate_per_min": 0.711
   },
   "pilot_analysis_last": {
     "proposal": {

@@ -18,24 +18,34 @@ DETECTOR_DEFAULTS = {
     "rest_point_ms": 150,      # a rest point = resting for >= 150 ms (segments moves for W)
     "visit_min_ms": 200,       # a card visit counts if >= 200 ms (Rayner 1998 fixation)
     "min_move_px": 30.0,       # wandering only counts moves with straight distance >= 30 px
-    "seen_card_ms": 350,       # active scanning: card hovered >= 350 ms
+    "seen_card_ms": 1000,      # "seen all phones" = each card hovered >= 1 s in total (the value the pilot used)
     # z-scores
     "z_cap": 5.0,
     "min_spread": {"B": 0.5, "F": 0.3, "I": 0.3, "W": 0.15, "S": 0.5},  # provisional; pilot replaces
-    # trigger
-    "threshold": 1.5,          # preset rule threshold 1.5 per pilot findings (pilot: 1.75 missed fast readers)
+    # trigger (docs/DETECTOR.md, steps 6-7, has the reason for every value)
+    "threshold": 1.75,         # picked by the pre-registered pilot rule (>= 70% right, <= 1 false alarm per round)
     "cooldown_s": 45,
     "dismiss_cooldown_s": 90,
     "max_popups": 3,
-    # at-least-once rule: if no pop-up within 4 s after phones were seen, Smart (C3) shows one at the first
-    # check with score >= 0.8, Random (C4) shows one at that same moment without looking at the score
-    "extra_after_s": 4,
-    "extra_threshold": 0.8,
-    # compulsory trigger: guaranteed AI assistance in AI rounds (C3 & C4) if not triggered by 10 seconds
-    "compulsory_s": 10,
-    # random pop-up condition (C4): pop-ups per minute after "seen all"; pilot replaces
-    "c4_rate_per_min": 1.5,
+    # second chance (Smart): no pop-up 10 s after all phones were seen -> first check with score >= 1.0
+    "extra_after_s": 10,
+    "extra_threshold": 1.0,
+    # Random (C4): first pop-up at "all seen" + a delay drawn from YOKED_DELAYS_S; later ones at this rate
+    "c4_rate_per_min": 0.711,
 }
+
+# Delays (s after all phones were seen) of Smart's first pop-up in the 13 pilot rounds that had one, with the
+# settings above. Random draws its first pop-up delay from this list, so Smart and Random pop up equally often and
+# at the same points in a round; only Smart is tied to the person's hesitation (a yoked control).
+YOKED_DELAYS_S = [0.5, 7.0, 7.5, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 11.5, 12.5, 17.0]
+
+# Frozen-settings revision applied once on start-up (app/db.py) and logged in the audit log. Participants keep the
+# settings they started with. Revision 3 replaces the 9-14 s timers of revision 2, which fired before people had seen
+# the phones and made Smart and Random identical.
+SETTINGS_REVISION = 3
+REVISION_NOTE = ("Revision 3: threshold 1.75 (pilot rule), detection in one check (3.5 s), second chance 10 s after "
+                 "all phones seen at score >= 1.0, Random yoked to Smart's pilot timing, at-Buy pop-up in both; the "
+                 "9-14 s timers removed.")
 
 THRESHOLD_GRID = [1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 2.75, 3.0]
 

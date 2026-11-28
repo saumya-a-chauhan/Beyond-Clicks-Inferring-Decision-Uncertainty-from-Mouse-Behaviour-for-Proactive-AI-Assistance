@@ -37,6 +37,7 @@ class LiveTask:
             self.next_tick -= self.next_tick % self.cfg["tick_ms"]
         while self.next_tick <= now_ms:
             tk = make_tick(self.tl, self.next_tick, self.base, self.cfg, self.seen.update(self.tl, self.next_tick))
+            tk["seen_at"] = self.seen.done_at          # exact all-seen time, also right after a rebuild
             if self.rule is not None:
                 did = self.rule.step(tk)
                 if did and fired is None:
@@ -66,19 +67,32 @@ def get(task_id, loader):
         lt = LiveTask(task_id, condition, phone_ids, base, cfg)
         with db.engine.connect() as c:
             ev = db.task_events(c, task_id)
-            prev = c.execute(select(db.popups.c.t_ms, db.popups.c.choice, db.popups.c.closed_ms)
-                             .where(db.popups.c.task_id == task_id).order_by(db.popups.c.t_ms)).all()
+            prev = popups_so_far(c, task_id)
         lt.add(ev["m"], ev["s"])
-        if lt.rule is not None:
-            for t_ms, choice, closed in prev:
-                lt.rule.fired.append(t_ms)
-                lt.rule.last_fire = t_ms
-                lt.rule.last_dismissed = choice == "dismiss"
-                lt.rule.open = closed is None and choice is None
+        restore(lt, prev)
         last_t = max([e[0] for e in ev["m"]] + [e[0] for e in ev["s"]] + [0])
         lt.next_tick = max(cfg["tick_ms"], last_t - last_t % cfg["tick_ms"])
         _tasks[task_id] = lt
         return lt, True
+
+
+def popups_so_far(conn, task_id):
+    return conn.execute(select(db.popups.c.t_ms, db.popups.c.choice, db.popups.c.closed_ms)
+                        .where(db.popups.c.task_id == task_id).order_by(db.popups.c.t_ms)).all()
+
+
+def restore(lt, prev):
+    """Pop-ups already shown in this round (from the database): the only state the rule needs between requests.
+    Called on every request, because on a serverless host another instance may have shown one meanwhile."""
+    if lt.rule is None:
+        return
+    r = lt.rule
+    r.fired, r.last_fire, r.last_dismissed, r.open = [], None, False, False
+    for t_ms, choice, closed in prev:
+        r.fired.append(t_ms)
+        r.last_fire = t_ms
+        r.last_dismissed = choice == "dismiss"
+        r.open = closed is None and choice is None
 
 
 def drop(task_id):

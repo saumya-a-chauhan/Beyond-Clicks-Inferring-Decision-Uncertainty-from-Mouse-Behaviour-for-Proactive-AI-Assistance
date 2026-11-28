@@ -12,7 +12,6 @@ import statistics as st
 from sqlalchemy import select
 
 from . import analysis, db, mouse, phones
-from .analysis import TLX_KEYS, sus_score
 from .defaults import CONDITIONS, DETECTOR_DEFAULTS
 
 STUDIES = ("pilot", "main")
@@ -42,6 +41,8 @@ COLUMNS = [
     ("final_correct", "TRUE if the final choice was correct"),
     ("final_rank", "Rank of the final choice"),
     ("popups_shown", "Number of AI pop-ups shown"),
+    ("popup_stages", "Which rule fired each pop-up: main (Smart: threshold; Random: random rate), extra (Smart second chance), yoked (Random first pop-up), at_buy (Buy clicked before any pop-up)"),
+    ("first_popup_s", "Seconds from round start to the first pop-up"),
     ("unsure_yes", "Pop-ups answered 'yes, I was unsure'"),
     ("unsure_no", "Pop-ups answered 'no'"),
     ("help_accepted", "Pop-ups where Compare or Explain was clicked"),
@@ -49,19 +50,11 @@ COLUMNS = [
     ("ai_requests", "AI answers given (pop-up help + Ask AI)"),
     ("unsure_moments_marked", "Pilot replay: number of 'I was unsure' moments marked"),
     ("confidence", "Confidence in first choice (1-7)"),
-    ("tlx_mental", "NASA-TLX mental demand"),
-    ("tlx_physical", "NASA-TLX physical demand"),
-    ("tlx_temporal", "NASA-TLX time pressure"),
-    ("tlx_performance", "NASA-TLX performance"),
-    ("tlx_effort", "NASA-TLX effort"),
-    ("tlx_frustration", "NASA-TLX frustration"),
-    ("sam_valence", "Mood: unpleasant (1) to pleasant (9)"),
-    ("sam_arousal", "Mood: calm (1) to excited (9)"),
+    ("mental_demand", "How mentally demanding was making this choice? (0 very easy - 100 very demanding)"),
     ("help_helpful", "The AI help was useful (1-7)"),
     ("help_timing", "The AI help came at the right time (1-7)"),
-    ("help_intrusive", "The AI help was annoying (1-7)"),
-    ("trust_mean", "Mean of the 4 trust items (1-7)"),
-    ("sus_score", "System Usability Scale for this condition (0-100)"),
+    ("help_intrusive", "The AI help was annoying or got in the way (1-7)"),
+    ("trust", "I trusted the AI assistant's advice (1-7)"),
     ("preference_rank", "Participant's ranking of this condition (1 = best)"),
 ] + mouse.SUMMARY_COLUMNS
 COLUMN_NAMES = [c for c, _ in COLUMNS]
@@ -127,13 +120,11 @@ def local_rows(study, include_sim=False):
                 select(db.tasks).where(db.tasks.c.participant_id == p["id"])
                 .where(db.tasks.c.kind.in_(("main", "pilot_ai"))).order_by(db.tasks.c.position))]
             resp = {}
-            sus_by_cond, ranks = {}, {}
+            ranks = {}
             for r in conn.execute(select(db.responses.c.kind, db.responses.c.task_key, db.responses.c.data)
                                   .where(db.responses.c.participant_id == p["id"])):
                 d = db.loads(r.data, {}) or {}
                 resp[(r.kind, r.task_key)] = d
-                if r.kind == "sus" and d.get("condition"):
-                    sus_by_cond[d["condition"]] = sus_score(d)
                 if r.kind == "ranking":
                     ranks = d.get("ranks") or {}
             demo = resp.get(("demographics", None), {})
@@ -144,7 +135,7 @@ def local_rows(study, include_sim=False):
                 lab = conn.execute(select(db.labels.c.intervals).where(db.labels.c.task_id == t["id"])).first()
                 post = resp.get(("post_task", t["task_key"]), {})
                 conf = resp.get(("confidence", t["task_key"]), {}).get("confidence", post.get("confidence"))
-                trust = [float(post[k]) for k in ("trust1", "trust2", "trust3", "trust4") if post.get(k) not in (None, "")]
+                pops.sort(key=lambda x: x["t_ms"] or 0)
                 cond = t["condition"]
                 row = {
                     "site": site, "participant": p["code"], "study": study, "status": p["status"],
@@ -158,6 +149,8 @@ def local_rows(study, include_sim=False):
                     "switched": _yes(t["switched"]), "final_choice": t["final_choice"],
                     "final_correct": _yes(t["final_correct"]), "final_rank": t["final_rank"],
                     "popups_shown": len(pops),
+                    "popup_stages": "; ".join(x["stage"] or "main" for x in pops) or None,
+                    "first_popup_s": round(pops[0]["t_ms"] / 1000, 1) if pops and pops[0]["t_ms"] is not None else None,
                     "unsure_yes": sum(1 for x in pops if x["unsure_answer"] == "yes"),
                     "unsure_no": sum(1 for x in pops if x["unsure_answer"] == "no"),
                     "help_accepted": sum(1 for x in pops if x["choice"] in ("compare", "explain", "general")),
@@ -165,14 +158,11 @@ def local_rows(study, include_sim=False):
                     "ai_requests": n_ai,
                     "unsure_moments_marked": len(db.loads(lab[0], []) or []) if lab else None,
                     "confidence": _num(conf),
-                    "sam_valence": _num(post.get("valence")), "sam_arousal": _num(post.get("arousal")),
+                    "mental_demand": _num(post.get("mental")),
                     "help_helpful": _num(post.get("helpful")), "help_timing": _num(post.get("timing")),
-                    "help_intrusive": _num(post.get("intrusive")),
-                    "trust_mean": round(st.mean(trust), 2) if trust else None,
-                    "sus_score": sus_by_cond.get(cond), "preference_rank": _num(ranks.get(cond)),
+                    "help_intrusive": _num(post.get("intrusive")), "trust": _num(post.get("trust1")),
+                    "preference_rank": _num(ranks.get(cond)),
                 }
-                for k in TLX_KEYS:
-                    row[f"tlx_{k}"] = _num(post.get(k))
                 ticks = db.unpack(t["ticks"], []) or []
                 row.update(mouse.summary(db.task_events(conn, t["id"]), ticks, cfg, _names(t["set_id"])))
                 out.append(row)

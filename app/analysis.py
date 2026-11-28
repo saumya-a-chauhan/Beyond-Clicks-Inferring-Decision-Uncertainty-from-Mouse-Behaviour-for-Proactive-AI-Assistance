@@ -209,8 +209,8 @@ def pilot_analysis(include_sim=False):
         fires = sum(len(simulate(it["ticks"], cfg, "avg", thr)) for it in all_items)
         c4_rate = round(fires / (total_ms / 60000.0), 3)
 
-    # at-least-once rule on the pilot rounds: Smart (score >= extra_threshold after the wait) vs the matched
-    # Random moment (same wait, score not used); both on top of the main stage at the chosen threshold
+    # second-chance rule on the pilot rounds: Smart (score >= extra_threshold after the wait) vs Random with its
+    # first pop-up yoked to Smart's pilot timing (score not used); both on top of the main stage
     extra = None
     if thr is not None:
         margin = SELECTION_RULE["match_margin_ms"]
@@ -225,7 +225,7 @@ def pilot_analysis(include_sim=False):
                     ok = any(a - margin <= t <= b + margin for a, b in it["labels"])
                     out["popups"] += 1
                     out["right"] += ok
-                    if stage == "extra":
+                    if stage in ("extra", "yoked"):
                         out["extra_popups"] += 1
                         out["extra_right"] += ok
             return out
@@ -433,9 +433,17 @@ def main_results(include_sim=False):
         yes, lo, hi = wilson(k, len(ans))
         acc = [p for p in v if p["choice"] in ("compare", "explain", "general")]
         match = [p for p in acc if p["choice"] == p["predicted_type"]]
-        ex = [p for p in ans if p.get("stage") == "extra"]
-        pop_rows[c] = {"n_popups": len(v), "n_extra": sum(1 for p in v if p.get("stage") == "extra"),
-                       "extra_yes_rate": (sum(1 for p in ex if p["unsure_answer"] == "yes") / len(ex)) if ex else None,
+        # at_buy pop-ups are the same in both conditions (Buy clicked before any pop-up), so the Smart vs Random
+        # comparison uses the timed pop-ups; both numbers are reported
+        timed = [p for p in ans if p.get("stage") != "at_buy"]
+        kt = sum(1 for p in timed if p["unsure_answer"] == "yes")
+        ty, tlo, thi = wilson(kt, len(timed))
+        stages = defaultdict(lambda: [0, 0])
+        for p in ans:
+            stages[p.get("stage") or "main"][0] += 1
+            stages[p.get("stage") or "main"][1] += p["unsure_answer"] == "yes"
+        pop_rows[c] = {"n_popups": len(v), "by_stage": {s: {"answered": n, "yes": y} for s, (n, y) in stages.items()},
+                       "timed_answered": len(timed), "timed_yes_rate": ty, "timed_yes_lo": tlo, "timed_yes_hi": thi,
                        "answered": len(ans), "yes_rate": yes, "yes_lo": lo, "yes_hi": hi,
                        "accept_rate": (len(acc) / len(v)) if v else None,
                        "type_match_rate": (len(match) / len(acc)) if acc else None,
@@ -494,15 +502,11 @@ def main_results(include_sim=False):
             c = task_cond.get((r["participant_id"], r["task_key"]))
             if not c:
                 continue
-            for key in ("confidence", "valence", "arousal", "helpful", "timing", "intrusive"):
+            for key in ("confidence", "mental", "helpful", "timing", "intrusive"):
                 if d.get(key) not in (None, ""):
                     q[c][key].append(float(d[key]))
-            tlx = [float(d[k]) for k in TLX_KEYS if d.get(k) not in (None, "")]
-            if len(tlx) == 6:
-                q[c]["tlx"].append(st.mean(tlx))
-            tr = [float(d[k]) for k in ("trust1", "trust2", "trust3", "trust4") if d.get(k) not in (None, "")]
-            if tr:
-                q[c]["trust"].append(st.mean(tr))
+            if d.get("trust1") not in (None, ""):
+                q[c]["trust"].append(float(d["trust1"]))
         elif r["kind"] == "sus":
             s = sus_score(d)
             cond = d.get("condition")

@@ -314,6 +314,10 @@ const TABS = {
       <div class="panel"><h2>Simulated data</h2>
         <p>Delete every participant created by <code>scripts/simulate.py</code>.</p>
         <button class="danger" id="delsim">Delete simulated participants</button></div>
+      <div class="panel"><h2>Clear main-study data only</h2>
+        <p>Deletes every <b>main-study</b> participant (M01, M02, …) and everything recorded for them, and restarts the main study at M01 with a fresh counterbalancing order.
+        The <b>pilot data, pilot analysis and freeze are kept</b>. Download the main CSV first (Data tab) if you want to keep a copy.</p>
+        <button class="danger" id="clearmain">Clear main-study data</button><div id="clearmainout"></div></div>
       <div class="panel"><h2>Clear all study data</h2>
         <p>Deletes <b>every</b> participant and everything recorded (rounds, mouse data, answers, pop-ups, replay labels), the pilot analysis and the <b>freeze</b>, so the study starts again from P01.
         The consent-page information and the laptop name are kept. A backup of the current data is saved first (listed above), so it can be restored.</p>
@@ -342,6 +346,15 @@ const TABS = {
         const r = await API.post("/api/admin/clear-all", { confirm: typed.trim() });
         out.innerHTML = `<div class="notice good">All study data cleared: ${r.deleted} participant(s) deleted. Backup saved first: <code>${esc(r.backup || "")}</code>. The next participant will be P01.</div>`;
         loadBk();
+      } catch (e) { out.innerHTML = `<div class="notice bad">${esc(e.message)}</div>`; }
+    };
+    view.querySelector("#clearmain").onclick = async () => {
+      const typed = prompt("This deletes ALL main-study participants and their data. Pilot data and the freeze are kept.\n\nType DELETE MAIN to confirm:");
+      if (typed === null) return;
+      const out = view.querySelector("#clearmainout");
+      try {
+        const r = await API.post("/api/admin/clear-main", { confirm: typed.trim() });
+        out.innerHTML = `<div class="notice good">Main-study data cleared: ${r.deleted} participant(s) deleted. The next main-study participant will be M01.</div>`;
       } catch (e) { out.innerHTML = `<div class="notice bad">${esc(e.message)}</div>`; }
     };
     view.querySelector("#delsim").onclick = async () => {
@@ -403,11 +416,11 @@ function renderPilot(r, o, out) {
         <li>Pop-ups per minute at the chosen threshold (used for the random condition): <b>${num(r.c4_rate_per_min, 2)}</b></li></ul>
         <canvas id="lag"></canvas>`)}
     </div>
-    ${r.extra ? box("At-least-once rule (extra pop-up)", `<p class="small">If a round has had no pop-up ${r.extra.after_s} s after all phones were seen, Smart shows one at the first moment the score is at least ${num(r.extra.threshold, 2)}; Random shows one at that same ${r.extra.after_s} s moment without looking at the score. Simulated on the pilot rounds (pop-up "right" = within 3 s of a marked unsure moment):</p>` + table([
+    ${r.extra ? box("Second chance (Smart) and yoked timing (Random)", `<p class="small">Smart: if no pop-up ${r.extra.after_s} s after all phones were seen, it pops up at the first moment the score is at least ${num(r.extra.threshold, 2)}. Random: its first pop-up comes at a delay after all phones were seen drawn from Smart's own pilot delays, without looking at the score. Simulated on the pilot rounds (pop-up "right" = within 3 s of a marked unsure moment):</p>` + table([
         ["", x => x.name], ["Rounds with a pop-up", x => `${x.d.rounds_with_popup} / ${x.d.rounds}`],
         ["All pop-ups right", x => x.d.popups ? `${x.d.right} / ${x.d.popups} (${pct(x.d.right / x.d.popups)})` : "–"],
         ["Extra pop-ups right", x => x.d.extra_popups ? `${x.d.extra_right} / ${x.d.extra_popups} (${pct(x.d.extra_right / x.d.extra_popups)})` : "–"]],
-        [{ name: "Smart (score used)", d: r.extra.smart }, { name: "Same moment, score not used", d: r.extra.matched_moment }])
+        [{ name: "Smart (score used)", d: r.extra.smart }, { name: "Random (Smart's timing, score not used)", d: r.extra.matched_moment }])
         + `<p class="small muted">Chance level: ${pct(r.chance_precision)}. The difference between the two rows is what the hesitation score adds beyond timing.</p>`) : ""}
     <div class="grid2">
       ${box("Cursor speed histogram (check of the 50 px/s resting cut-off)", `<canvas id="speed"></canvas>`, "The dip between 'still' and 'moving' should be near the dashed line.")}
@@ -458,12 +471,14 @@ function renderMain(r, out) {
     <div class="panel"><div class="kpis">
       <div class="kpi"><div class="n">${r.n_people}</div><div class="l">participants</div></div>
       <div class="kpi"><div class="n">${r.n_tasks_done}</div><div class="l">rounds completed</div></div>
-      <div class="kpi"><div class="n">${pct(pop.C3.yes_rate)} vs ${pct(pop.C4.yes_rate)}</div><div class="l">"unsure just now?" yes: smart vs random pop-up</div></div>
+      <div class="kpi"><div class="n">${pct(pop.C3.timed_yes_rate)} vs ${pct(pop.C4.timed_yes_rate)}</div><div class="l">"unsure just now?" yes: Smart vs Random (timed pop-ups, at-Buy excluded)</div></div>
       <div class="kpi"><div class="n">${num(r.auc_at_random_moments.avg.auc)}</div><div class="l">main detector AUC at random moments (0.5 = chance)</div></div>
     </div></div>
     ${box("Claim 1: does the detector catch real hesitation?", `<canvas id="yes"></canvas>` + table([
       ["Condition", c => COND_NAMES[c]], ["Pop-ups", c => pop[c].n_popups], ["Answered", c => pop[c].answered],
-      ["Yes, I was unsure", c => `${pct(pop[c].yes_rate)} [${pct(pop[c].yes_lo)}, ${pct(pop[c].yes_hi)}]`],
+      ["Yes, timed pop-ups (main comparison)", c => `${pct(pop[c].timed_yes_rate)} [${pct(pop[c].timed_yes_lo)}, ${pct(pop[c].timed_yes_hi)}] (n=${pop[c].timed_answered})`],
+      ["Yes, all incl. at-Buy", c => `${pct(pop[c].yes_rate)} [${pct(pop[c].yes_lo)}, ${pct(pop[c].yes_hi)}]`],
+      ["Answered by rule", c => Object.entries(pop[c].by_stage || {}).map(([k, v]) => `${esc(k)} ${v.yes}/${v.answered}`).join(", ") || "–"],
       ["Accepted help", c => pct(pop[c].accept_rate)], ["Clicked the predicted help type", c => pct(pop[c].type_match_rate)], ["Pop-ups per round", c => num(pop[c].per_task, 1)]], ["C3", "C4"])
       + table([["Detector", v => ({ avg: "Average (main)", max: "Maximum z", B: "Back-and-forth only", I: "Pausing only" })[v]],
         ["AUC at random C4 moments", v => num(r.auc_at_random_moments[v].auc)], ["n yes / no", v => `${r.auc_at_random_moments[v].n_yes} / ${r.auc_at_random_moments[v].n_no}`]], ["avg", "max", "B", "I"]),
@@ -478,14 +493,14 @@ function renderMain(r, out) {
     ${box("Claim 6: hesitation score around the pop-up", `<canvas id="aligned"></canvas>` + table([["Group", g => esc(g)], ["n", g => r.before_after[g].n],
       ["Score 10 s before", g => num(r.before_after[g].before)], ["Score 10 s after", g => num(r.before_after[g].after)]], Object.keys(r.before_after)))}
     ${box("Questionnaires (means per condition)", table([["Condition", c => COND_NAMES[c]],
-      ...["confidence", "tlx", "valence", "arousal", "helpful", "timing", "intrusive", "trust"].map(k => [k, c => num((r.questionnaires[c] || {})[k])]),
-      ["SUS", c => r.sus[c] ? `${num(r.sus[c].mean, 1)} (n=${r.sus[c].n})` : "–"], ["Preference rank (1 best)", c => num(r.preference_rank[c])]], ["C1", "C2", "C3", "C4"]))}
+      ...["confidence", "mental", "helpful", "timing", "intrusive", "trust"].map(k => [k, c => num((r.questionnaires[c] || {})[k])]),
+      ["Preference rank (1 best)", c => num(r.preference_rank[c])]], ["C1", "C2", "C3", "C4"]))}
     <div class="grid2">
       ${box("Order check (counterbalancing)", table([["Position", x => x.position], ["n", x => x.n], ["% correct", x => pct(x.correct_rate)], ["Median time", x => `${num(x.median_time_s, 0)} s`]], r.order_check))}
       ${box("AI usage", `<p>Ask AI (C2): ${r.ask_ai.requests} requests in ${r.ask_ai.tasks_with_use} of ${r.ask_ai.c2_tasks} rounds.</p><pre class="json">${esc(JSON.stringify(r.llm, null, 2))}</pre>`)}
     </div>`;
   chart(out.querySelector("#yes"), { type: "bar", data: { labels: ["Smart pop-up (C3)", "Random pop-up (C4)"],
-    datasets: [{ label: "% 'yes, I was unsure'", data: [pop.C3.yes_rate, pop.C4.yes_rate].map(v => v == null ? null : 100 * v), backgroundColor: ["#3557d6", "#c5c9d6"] }] },
+    datasets: [{ label: "% 'yes, I was unsure' (timed pop-ups)", data: [pop.C3.timed_yes_rate, pop.C4.timed_yes_rate].map(v => v == null ? null : 100 * v), backgroundColor: ["#3557d6", "#c5c9d6"] }] },
     options: { scales: { y: { min: 0, max: 100 } } } });
   chart(out.querySelector("#time"), { type: "bar", data: { labels: C.map(c => COND_NAMES[c.condition]),
     datasets: [{ label: "Median decision time (s)", data: C.map(c => c.median_time_s), backgroundColor: "#7a9cff" }] }, options: { scales: { y: { beginAtZero: true } } } });

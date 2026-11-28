@@ -11,5 +11,8 @@
       "source": "/(.*)",
       "destination": "/api/index?path=/$1"
     }
+  ],
+  "regions": [
+    "sin1"
   ]
 }

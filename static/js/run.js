@@ -212,66 +212,34 @@ const STEPS = {
     leaving = true;
     let logger = null;
     let done = false;
-    let popupShown = false;
-    let compulsoryTimer = null;
+    let popupShown = false;    // a pop-up has been shown in this round
+    let buying = false;
+    let demoTimer = null;
     const ctx = { token: S.token, taskId: t.task_id, set: t.set, card_order: t.card_order, now: () => logger.now(), demo: t.condition === "DEMO" };
+    // Pop-ups come only from the server (Smart: hesitation; Random: timing yoked to Smart's pilot timing).
     const onPopup = pop => {
-      if (done || popupShown || !pop) return;
+      if (done || !pop) return;
       popupShown = true;
-      if (compulsoryTimer) clearTimeout(compulsoryTimer);
       AiPanel.showPopup(pop, ctx);
     };
-    logger = new Logger(t.task_id, S.token, t.time_offset_ms, t.next_seq, r => {
-      if (r && r.popup) onPopup(r.popup);
-    });
-
-    const triggerAiPopup = (reason = "timer") => {
-      if (done || popupShown) return;
-      if (AiPanel.isOpen()) {
-        if (compulsoryTimer) clearTimeout(compulsoryTimer);
-        compulsoryTimer = setTimeout(() => triggerAiPopup(reason), 1500);
-        return;
-      }
-      const ids = t.card_order || [];
-      const name = id => {
-        const ph = (t.set.phones || []).find(p => p.id === id);
-        return ph ? ph.name : id;
-      };
-      const p1 = ids[0] || "P1", p2 = ids[1] || "P2";
-      const priorities = (t.set.card && t.set.card.priorities) || ["battery"];
-      const specKey = priorities[0] || "battery";
-      const specLabel = (t.set.spec_labels && t.set.spec_labels[specKey]) || specKey;
-      const localPop = {
-        id: null,
-        predicted_type: t.condition === "C3" ? "compare" : (Math.random() < 0.5 ? "compare" : "explain"),
-        pair: [{ id: p1, name: name(p1) }, { id: p2, name: name(p2) }],
-        spec: { key: specKey, label: specLabel },
-      };
-      // Show immediately so there is zero network delay
-      onPopup(localPop);
-      // Simultaneously sync with server so database records the popup
-      API.post(`/api/task/${t.task_id}/trigger-popup`, { token: S.token, t: logger ? logger.now() : 2800 })
-        .then(r => {
-          if (r && r.popup && r.popup.id) {
-            localPop.id = r.popup.id;
-          }
-        })
-        .catch(e => console.warn("trigger-popup sync:", e));
-    };
+    logger = new Logger(t.task_id, S.token, t.time_offset_ms, t.next_seq, r => onPopup(r && r.popup));
 
     Shop.render(document.getElementById("shoproot"), {
       set: t.set, card_order: t.card_order, header, prompt: prompts[st.task_kind],
       buyLabel: st.task_kind.startsWith("baseline") ? "Choose this phone" : "Buy this phone",
       onBuy: async pid => {
-        if (done) return;
-        // In proactive AI rounds (C3 Smart / C4 Random), guarantee the AI assistant is seen at least once
+        if (done || buying) return;
+        // Smart / Random round with no pop-up yet: the pop-up comes first (same in both), then they buy
         if ((t.condition === "C3" || t.condition === "C4") && !popupShown) {
-          triggerAiPopup("onBuy");
-          alert("Before finalizing your decision, please review the recommendation from your AI assistant!");
-          return;
+          buying = true;
+          try {
+            const r = await API.post(`/api/task/${t.task_id}/at-buy`, { token: S.token, t: logger.now() });
+            if (r && r.popup) { buying = false; onPopup(r.popup); return; }
+          } catch (e) { /* network problem: do not block the purchase */ }
+          buying = false;
         }
         done = true;
-        if (compulsoryTimer) clearTimeout(compulsoryTimer);
+        if (demoTimer) clearTimeout(demoTimer);
         const decision = logger.now();
         AiPanel.close();
         document.querySelectorAll(".ai-fab").forEach(n => n.remove());
@@ -287,20 +255,13 @@ const STEPS = {
     if (t.condition === "DEMO") {
       const demo = () => {
         if (done) return;
-        if (AiPanel.isOpen()) { setTimeout(demo, 2500); return; }   // wait until the Ask-AI panel is closed
+        if (AiPanel.isOpen()) { demoTimer = setTimeout(demo, 2500); return; }   // wait until the Ask-AI panel is closed
         const ids = t.card_order;
         const name = id => t.set.phones.find(p => p.id === id).name;
         onPopup({ id: 0, predicted_type: "compare", pair: [{ id: ids[0], name: name(ids[0]) }, { id: ids[1], name: name(ids[1]) }],
                   spec: { key: "storage", label: t.set.spec_labels.storage } });
       };
-      compulsoryTimer = setTimeout(demo, 3500);
-    } else if (t.condition === "C3") {
-      // In C3 Smart condition, let the hesitation detector monitor mouse behaviour naturally.
-      // Safety backstop only triggers after 14 seconds if no natural hesitation was detected.
-      compulsoryTimer = setTimeout(() => triggerAiPopup("fallback"), 14000);
-    } else if (t.condition === "C4") {
-      // In C4 Random condition, random timer fires or safety backstop at 9 seconds.
-      compulsoryTimer = setTimeout(() => triggerAiPopup("fallback"), 9000);
+      demoTimer = setTimeout(demo, 8000);
     }
   },
 
@@ -361,13 +322,6 @@ const STEPS = {
       if (ai) required.push("helpful", "timing", "intrusive", "trust1");
       const { out, missing } = collect(p, required);
       if (missing.length) { alert(`Please answer all questions (${missing.length} left). For sliders, move the slider at least once.`); return; }
-      // Auto-fill effort and remaining trust items so database / exports remain consistent
-      out.effort = out.mental;
-      if (ai) {
-        out.trust2 = out.trust1;
-        out.trust3 = out.trust1;
-        out.trust4 = out.trust1;
-      }
       submit(Object.assign(out, { condition: st.condition }), { task_key: st.task_key });
     };
   },

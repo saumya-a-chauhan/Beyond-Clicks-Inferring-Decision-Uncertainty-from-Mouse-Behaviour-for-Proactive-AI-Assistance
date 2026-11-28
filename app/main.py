@@ -303,24 +303,37 @@ def api_events(task_id: int, body: Events):
         conn.execute(db.event_batches.insert().values(task_id=task_id, seq=body.seq,
                                                       data=db.pack({"m": body.m, "s": body.s, "c": body.c}),
                                                       created_at=db.now()))
+        prev = live.popups_so_far(conn, task_id) if t["condition"] in ("C3", "C4") else []
     if t["condition"] not in ("C3", "C4"):
         return {"ok": True}
     lt, rebuilt = live.get(task_id, _live_loader(None, p, t))
     with lt.lock:
         if not rebuilt:
             lt.add(body.m, body.s)
+            live.restore(lt, prev)
         fired = lt.process(int(body.now))
     if fired is None:
         return {"ok": True}
-    content = popup_content(fired, live.MODE[t["condition"]], rng=random.Random(task_id * 1000 + len(lt.rule.fired)))
+    return _new_popup(t, fired, lt.rule.stage, fired["t"], lt.rule.cfg["cooldown_s"])
+
+
+def _new_popup(t, tick, stage, t_ms, cooldown_s):
+    """Store and return a pop-up, unless one was shown in the last cooldown_s (another serverless instance may
+    have fired at the same moment)."""
+    mode = live.MODE[t["condition"]]
+    content = popup_content(tick, mode, rng=random.Random(t["id"] * 1000 + int(t_ms))) if tick else \
+        {"predicted_type": "general", "pair": None, "spec": None}
     pair = content["pair"] or db.loads(t["card_order"], [])[:2]
     spec = content["spec"] or (phones.get_set(t["set_id"])["card"].get("priorities") or ["battery"])[0]
     with db.engine.begin() as conn:
-        res = conn.execute(db.popups.insert().values(
-            task_id=task_id, t_ms=fired["t"], source=live.MODE[t["condition"]], stage=lt.rule.stage,
-            predicted_type=content["predicted_type"], pair=db.dumps(pair), spec=spec,
-            score=fired["scores"]["avg"], zs=db.dumps(fired["z"])))
-        pop_id = res.inserted_primary_key[0]
+        recent = conn.execute(select(db.popups.c.id).where(db.popups.c.task_id == t["id"],
+                                                           db.popups.c.t_ms > t_ms - cooldown_s * 1000)).first()
+        if recent is not None:
+            return {"ok": True}
+        pop_id = conn.execute(db.popups.insert().values(
+            task_id=t["id"], t_ms=t_ms, source=mode, stage=stage, predicted_type=content["predicted_type"],
+            pair=db.dumps(pair), spec=spec, score=tick["scores"]["avg"] if tick else None,
+            zs=db.dumps(tick["z"]) if tick else None)).inserted_primary_key[0]
     labels = phones.catalog()["spec_labels"]
     return {"ok": True, "popup": {
         "id": pop_id, "predicted_type": content["predicted_type"],
@@ -328,42 +341,30 @@ def api_events(task_id: int, body: Events):
         "spec": {"key": spec, "label": labels.get(spec, spec)}}}
 
 
-class TriggerPopupBody(BaseModel):
+class AtBuyBody(BaseModel):
     token: str
-    t: int = 0
+    t: int
 
 
-@app.post("/api/task/{task_id}/trigger-popup")
-def api_trigger_popup(task_id: int, body: TriggerPopupBody):
+@app.post("/api/task/{task_id}/at-buy")
+def api_at_buy(task_id: int, body: AtBuyBody):
+    """Buy clicked in a Smart or Random round that has had no pop-up yet: the pop-up comes first (stage at_buy,
+    the same in both conditions), so every AI round shows the AI assistant. Returns popup None if one was shown."""
     with db.engine.begin() as conn:
         p, t = task_for(conn, task_id, body.token)
         if t["ended_at"] is not None or t["condition"] not in ("C3", "C4"):
             return {"ok": True, "popup": None}
-        existing = conn.execute(select(db.popups).where(db.popups.c.task_id == task_id).order_by(db.popups.c.t_ms)).first()
-        labels = phones.catalog()["spec_labels"]
-        if existing:
-            ex = dict(existing._mapping)
-            pair = db.loads(ex["pair"], [])
-            spec = ex["spec"] or "battery"
-            return {"ok": True, "popup": {
-                "id": ex["id"], "predicted_type": ex["predicted_type"],
-                "pair": [{"id": x, "name": name_of(t["set_id"], x)} for x in pair],
-                "spec": {"key": spec, "label": labels.get(spec, spec)}}}
-        mode = live.MODE[t["condition"]]
-        ptype = "compare" if mode == "detector" else random.choice(["compare", "explain", "general"])
-        cards = db.loads(t["card_order"], [])
-        pair = cards[:2] if len(cards) >= 2 else ["P1", "P2"]
-        priorities = phones.get_set(t["set_id"])["card"].get("priorities") or ["battery"]
-        spec = priorities[0]
-        res = conn.execute(db.popups.insert().values(
-            task_id=task_id, t_ms=body.t or 3500, source=mode, stage="compulsory",
-            predicted_type=ptype, pair=db.dumps(pair), spec=spec,
-            score=1.5, zs=db.dumps({"B": 1.5, "F": 0.0, "I": 0.0, "W": 0.0, "S": 0.0})))
-        pop_id = res.inserted_primary_key[0]
-        return {"ok": True, "popup": {
-            "id": pop_id, "predicted_type": ptype,
-            "pair": [{"id": x, "name": name_of(t["set_id"], x)} for x in pair],
-            "spec": {"key": spec, "label": labels.get(spec, spec)}}}
+        if conn.execute(select(db.popups.c.id).where(db.popups.c.task_id == task_id)).first() is not None:
+            return {"ok": True, "popup": None}
+        prev = live.popups_so_far(conn, task_id)
+    lt, rebuilt = live.get(task_id, _live_loader(None, p, t))
+    with lt.lock:
+        if not rebuilt:
+            live.restore(lt, prev)
+        lt.process(int(body.t))                      # the hesitation score at the moment of Buy, for the record
+        tick = lt.last_tick
+    out = _new_popup(t, tick, "at_buy", int(body.t), 0)
+    return out if out.get("popup") else {"ok": True, "popup": None}
 
 
 class TaskEnd(BaseModel):
@@ -727,6 +728,23 @@ def admin_clear_all(body: ClearBody):
         db.log_audit("all_data_cleared", {"participants": n, "backup": path.name if path else None}, conn=conn)
     live._tasks.clear()
     return {"ok": True, "deleted": n, "backup": path.name if path else None}
+
+
+@app.post("/api/admin/clear-main", dependencies=[Depends(auth.require_admin)])
+def admin_clear_main(body: ClearBody):
+    """Deletes every main-study participant and everything recorded for them, and restarts the main-study
+    counterbalancing at M01. The pilot data, pilot analysis and freeze are kept. Download the main CSV first."""
+    if body.confirm != "DELETE MAIN":
+        raise HTTPException(400, "Type DELETE MAIN to confirm.")
+    path = backup.make_backup("before_clear_main")
+    with db.engine.begin() as conn:
+        pids = [r[0] for r in conn.execute(select(db.participants.c.id).where(db.participants.c.study == "main"))]
+        for pid in pids:
+            _delete_participant(conn, pid)
+        conn.execute(db.settings_t.delete().where(db.settings_t.c.key == "assignment_main"))
+        db.log_audit("main_data_cleared", {"participants": len(pids), "backup": path.name if path else None}, conn=conn)
+    live._tasks.clear()
+    return {"ok": True, "deleted": len(pids)}
 
 
 class SettingsBody(BaseModel):

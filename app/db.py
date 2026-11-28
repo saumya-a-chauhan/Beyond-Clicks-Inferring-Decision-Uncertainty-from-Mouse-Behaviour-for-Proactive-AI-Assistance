@@ -7,7 +7,6 @@ from datetime import datetime, timezone
 from sqlalchemy import (Boolean, Column, DateTime, Float, ForeignKey, Integer, LargeBinary,
                         MetaData, String, Table, Text, UniqueConstraint, create_engine, event,
                         inspect, select, text)
-from sqlalchemy.pool import NullPool
 
 from . import config
 
@@ -24,7 +23,9 @@ else:
     # (e.g. Supabase port 6543, PgBouncer, Neon)
     _connect_args["prepare_threshold"] = None
     if os.getenv("VERCEL"):
-        _engine_kwargs["poolclass"] = NullPool
+        # A warm serverless instance keeps two connections instead of opening a new one (TLS + login, several
+        # round trips) for every query; the database's own pooler handles many instances.
+        _engine_kwargs.update(pool_size=2, max_overflow=3, pool_recycle=240)
 
 engine = create_engine(
     config.DATABASE_URL,
@@ -110,7 +111,7 @@ popups = Table(
     Column("task_id", Integer, ForeignKey("tasks.id", ondelete="CASCADE"), index=True),
     Column("t_ms", Integer),
     Column("source", String(12)),          # detector | random
-    Column("stage", String(16)),           # main | extra | compulsory
+    Column("stage", String(16)),           # main | extra (Smart) | yoked (Random) | at_buy
     Column("predicted_type", String(12)),  # compare | explain | general
     Column("pair", Text),                  # JSON [phoneId, phoneId]
     Column("spec", String(16)),
@@ -190,38 +191,68 @@ def now():
 
 MIGRATIONS = [("popups", "stage", "VARCHAR(16)")]
 
+# Frozen values set by settings revision 3 (app/defaults.py); min_spread B is the pilot median spread (0.74)
+REVISED_KEYS = ("threshold", "persistence_ticks", "seen_card_ms", "extra_after_s", "extra_threshold", "c4_rate_per_min")
+PILOT_MIN_SPREAD = {"B": 0.7413, "F": 0.3, "I": 0.3, "W": 0.15, "S": 0.5}
+
+
+def _upgrade_columns():
+    insp = inspect(engine)
+    if not insp.has_table("popups"):
+        return
+    have = {c["name"] for c in insp.get_columns("popups")}
+    for table, col, typ in MIGRATIONS:
+        if col in have:
+            continue
+        # IF NOT EXISTS: two serverless instances starting at once must not fail on the same column
+        sql = (f"ALTER TABLE {table} ADD COLUMN {col} {typ}" if config.DATABASE_URL.startswith("sqlite")
+               else f"ALTER TABLE {table} ADD COLUMN IF NOT EXISTS {col} {typ}")
+        try:
+            with engine.begin() as c:
+                c.execute(text(sql))
+        except Exception:
+            if col not in {c["name"] for c in inspect(engine).get_columns(table)}:
+                raise
+
+
+def _settings_revision():
+    """Frozen settings: seed a fresh database from frozen_seed.json, then bring frozen settings up to
+    SETTINGS_REVISION once, with the old and new values in the audit log. Participants keep their own snapshot."""
+    from .defaults import DETECTOR_DEFAULTS, REVISION_NOTE, SETTINGS_REVISION
+    frozen = get_setting("frozen")
+    if frozen is None:
+        seed_path = config.DATA_DIR / "frozen_seed.json"
+        if not seed_path.exists():
+            return
+        seed = json.loads(seed_path.read_text(encoding="utf-8"))
+        for key in ("frozen", "detector", "pilot_analysis_last"):
+            if seed.get(key):
+                set_setting(key, seed[key])
+        log_audit("init_seed", {"source": "frozen_seed.json"})
+        frozen = get_setting("frozen")
+    if not frozen or not frozen.get("frozen") or (frozen.get("revision") or 0) >= SETTINGS_REVISION:
+        return
+    new = {k: DETECTOR_DEFAULTS[k] for k in REVISED_KEYS}
+    new["min_spread"] = PILOT_MIN_SPREAD
+    old = frozen.get("settings") or {}
+    before = {k: old.get(k) for k in list(new) + ["compulsory_s"]}
+    settings = {k: v for k, v in old.items() if k != "compulsory_s"}
+    settings.update(new)
+    frozen.update(settings=settings, threshold=new["threshold"], revision=SETTINGS_REVISION,
+                  revised_at=now().isoformat(), revision_note=REVISION_NOTE)
+    set_setting("frozen", frozen)
+    detector = {k: v for k, v in (get_setting("detector") or {}).items() if k != "compulsory_s"}
+    detector.update(new)
+    set_setting("detector", detector)
+    log_audit("settings_revised", {"revision": SETTINGS_REVISION, "before": before, "after": new,
+                                   "note": REVISION_NOTE})
+
 
 def init_db():
     md.create_all(engine)
-    # Apply schema migrations for existing databases
-    try:
-        insp = inspect(engine)
-        if insp.has_table("popups"):
-            existing_cols = {c["name"] for c in insp.get_columns("popups")}
-            with engine.begin() as c:
-                for table, col, typ in MIGRATIONS:
-                    if col not in existing_cols:
-                        c.execute(text(f"ALTER TABLE {table} ADD COLUMN {col} {typ}"))
-    except Exception:
-        pass
-    # If the database has no frozen settings (or needs update to 1.5 threshold & compulsory rule),
-    # seed the frozen pilot analysis and threshold so the main study is immediately unlocked.
-    try:
-        frozen = get_setting("frozen")
-        seed_path = config.DATA_DIR / "frozen_seed.json"
-        if seed_path.exists():
-            with open(seed_path, "r", encoding="utf-8") as f:
-                seed = json.load(f)
-            if frozen is None or frozen.get("threshold") != 1.5 or (get_setting("detector", {}) or {}).get("compulsory_s") != 10:
-                if seed.get("frozen"):
-                    set_setting("frozen", seed["frozen"])
-                if seed.get("detector"):
-                    set_setting("detector", seed["detector"])
-                if seed.get("pilot_analysis_last"):
-                    set_setting("pilot_analysis_last", seed["pilot_analysis_last"])
-                log_audit("init_seed", {"source": "frozen_seed.json", "threshold": 1.5, "compulsory_s": 10})
-    except Exception:
-        pass
+    _upgrade_columns()
+    _settings_revision()
+
 
 def dumps(o):
     return json.dumps(o, separators=(",", ":"))

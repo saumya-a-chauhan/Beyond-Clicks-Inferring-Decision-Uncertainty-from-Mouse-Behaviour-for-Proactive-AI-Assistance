@@ -293,13 +293,13 @@ def main_study(include_sim):
 
     # Fig 17-19: questionnaires
     q = res["questionnaires"]
-    keys = ["tlx", "confidence", "valence", "arousal"]
+    keys = ["mental", "confidence"]
     fig, ax = plt.subplots(1, 2, figsize=(11, 3.8))
     x = np.arange(len(keys))
     for i, c in enumerate(order):
         ax[0].bar(x + (i - 1.5) * .2, [(q.get(c) or {}).get(k, 0) for k in keys], .2, color=COLORS[c], label=COND[c])
-    ax[0].set_xticks(x, ["Workload (TLX 0-100)", "Confidence (1-7)", "Valence (1-9)", "Arousal (1-9)"]); ax[0].legend(fontsize=7)
-    ax[0].set_yscale("symlog"); ax[0].set_title("Workload and feelings")
+    ax[0].set_xticks(x, ["Mental demand (0-100)", "Confidence (1-7)"]); ax[0].legend(fontsize=7)
+    ax[0].set_yscale("symlog"); ax[0].set_title("Effort and confidence")
     k2 = ["helpful", "timing", "intrusive", "trust"]
     x = np.arange(len(k2))
     for i, c in enumerate(["C2", "C3", "C4"]):
@@ -308,14 +308,11 @@ def main_study(include_sim):
     ax[1].set_title("Ratings of the AI help (1-7)")
     save(fig, "17_18_questionnaires.png")
 
-    fig, ax = plt.subplots(1, 2, figsize=(10, 3.6))
-    sus = res["sus"]
-    ax[0].bar([COND[c] for c in ("C2", "C3", "C4")], [(sus.get(c) or {}).get("mean", 0) for c in ("C2", "C3", "C4")], color=[COLORS[c] for c in ("C2", "C3", "C4")])
-    ax[0].axhline(68, ls="--", color="#999", label="SUS average (68)"); ax[0].set_ylim(0, 100); ax[0].legend(); ax[0].set_title("Usability (SUS)")
+    fig, ax = plt.subplots(figsize=(6, 3.6))
     pref = res["preference_rank"]
-    ax[1].bar([COND[c] for c in order], [pref.get(c, 0) for c in order], color=[COLORS[c] for c in order])
-    ax[1].invert_yaxis(); ax[1].set_ylabel("Mean preference rank (1 = best)"); ax[1].set_title("Which round people preferred")
-    save(fig, "19_20_sus_preference.png")
+    ax.bar([COND[c] for c in order], [pref.get(c, 0) for c in order], color=[COLORS[c] for c in order])
+    ax.invert_yaxis(); ax.set_ylabel("Mean preference rank (1 = best)"); ax.set_title("Which round people preferred")
+    save(fig, "19_20_preference.png")
 
     # Fig 21: order check
     oc = res["order_check"]

@@ -145,23 +145,50 @@ def test_trigger_needs_persistence_seen_and_respects_cooldown_and_max():
     assert simulate([tick(500 * k, 2.0 if k % 4 else 0.0, seen=True) for k in range(1, 4)], CFG, threshold=1.5) == [500]
 
 
-def test_extra_popup_at_least_once_and_matched_in_timing():
-    cfg = dict(CFG, extra_after_s=5, extra_threshold=0.5)
-    # all phones seen at 2 s; score 0.6 (below the threshold 1.5, above the extra threshold 0.5)
-    ticks = [tick(500 * k, 0.6, seen=k >= 4) for k in range(1, 100)]
-    seen_t, wait = 2000, cfg["extra_after_s"] * 1000
-    assert simulate(ticks, cfg, threshold=1.5) == []                                  # main stage alone: nothing
-    smart = simulate(ticks, cfg, threshold=1.5, extra=True, stages=True)
-    assert smart == [(seen_t + wait, "extra")]                                         # once, right after the wait
-    rnd = simulate(ticks, dict(cfg, c4_rate_per_min=0), mode="random", extra=True, stages=True)
-    assert rnd == [(seen_t + wait, "extra")]                                           # Random: same moment
-    # Smart waits for the score; Random does not look at it
-    low = [tick(500 * k, 0.2 if k < 20 else 0.6, seen=k >= 4) for k in range(1, 100)]
-    assert simulate(low, cfg, threshold=1.5, extra=True) == [10000]
-    assert simulate(low, dict(cfg, c4_rate_per_min=0), mode="random", extra=True) == [seen_t + wait]
-    # a round that already had a main pop-up gets no extra one
-    hi = [tick(500 * k, 2.0 if k == 6 else 0.6, seen=k >= 4) for k in range(1, 100)]
-    assert simulate(hi, cfg, threshold=1.5, extra=True, stages=True) == [(3000, "main")]
+def test_smart_second_chance_and_no_popup_before_all_seen():
+    cfg = dict(CFG, threshold=1.75, extra_after_s=10, extra_threshold=1.0)
+    # all phones seen at 2 s; score 1.2: below the threshold, above the second-chance bar
+    ticks = [tick(500 * k, 1.2, seen=k >= 4) for k in range(1, 100)]
+    assert simulate(ticks, cfg) == []                                                # threshold alone: nothing
+    assert simulate(ticks, cfg, extra=True, stages=True) == [(12000, "extra")]      # 10 s after all seen
+    # a high score fires at once, but never before all phones are seen
+    hi = [tick(500 * k, 2.0, seen=k >= 4) for k in range(1, 100)]
+    assert simulate(hi, cfg, extra=True, stages=True)[0] == (2000, "main")
+    # second chance waits for the score: no pop-up while the score stays low
+    low = [tick(500 * k, 0.5, seen=k >= 4) for k in range(1, 100)]
+    assert simulate(low, cfg, extra=True) == []
+
+
+def test_random_first_popup_is_yoked_to_smart_pilot_timing():
+    from app.defaults import YOKED_DELAYS_S
+    cfg = dict(CFG, c4_rate_per_min=0)
+    ticks = [tick(500 * k, 0.0, seen=k >= 4) for k in range(1, 200)]
+    delays = set()
+    for seed in range(40):
+        out = simulate(ticks, cfg, mode="random", seed=seed, extra=True, stages=True)
+        assert len(out) == 1 and out[0][1] == "yoked"
+        delays.add((out[0][0] - 2000) / 1000)
+    assert delays <= {d + x for d in YOKED_DELAYS_S for x in (0, 0.5)}               # on the next 0.5 s check
+    assert len(delays) > 3                                                           # varies between rounds
+
+
+def test_rule_rebuilt_mid_round_decides_like_a_long_lived_one():
+    """Serverless: each request may land on a fresh instance that rebuilds the rule; only the pop-ups already
+    shown are restored. Decisions must not change."""
+    cfg = dict(CFG, threshold=1.75, c4_rate_per_min=3.0)
+    ticks = [tick(500 * k, 2.0 if k % 37 == 0 else 0.3, seen=k >= 6) for k in range(1, 400)]
+    for mode in ("detector", "random"):
+        whole = simulate(ticks, cfg, mode=mode, seed=7, extra=True)
+        fired = []
+        for k, tk in enumerate(ticks):
+            rule = TriggerRule(cfg, mode=mode, seed=7, extra=True)                  # fresh instance every check
+            rule.seen_at = next((x["t"] for x in ticks[:k + 1] if x["seen"]), None)
+            for t in fired:
+                rule.fired.append(t)
+                rule.last_fire = t
+            if rule.step(tk):
+                fired.append(tk["t"])
+        assert fired == whole, mode
 
 
 def test_dismiss_doubles_cooldown():
@@ -221,12 +248,3 @@ def test_score_triggers_and_rule():
             {"threshold": 2.0, "precision": 0.9, "recall": 0.5, "fa_per_task": 0.2}]
     assert choose_threshold(rows) == 1.75          # 1.5 and 1.75 almost equal recall -> higher threshold
     assert choose_threshold([{"threshold": 1.0, "precision": 0.5, "recall": 0.9, "fa_per_task": 2}]) is None
-
-
-def test_compulsory_popup_guaranteed_in_ai_rounds():
-    cfg = dict(CFG, compulsory_s=12, extra_after_s=8, extra_threshold=0.8)
-    ticks = [tick(500 * k, 0.0, seen=False) for k in range(1, 60)]
-    smart = simulate(ticks, cfg, threshold=1.5, extra=True, stages=True)
-    assert smart == [(12000, 'compulsory')]
-    rnd = simulate(ticks, dict(cfg, c4_rate_per_min=0), mode='random', extra=True, stages=True)
-    assert rnd == [(12000, 'compulsory')]

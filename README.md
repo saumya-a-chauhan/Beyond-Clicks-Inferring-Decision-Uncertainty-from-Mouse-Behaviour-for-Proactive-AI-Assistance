@@ -39,7 +39,7 @@ the main-study results.
 | 3. Main study | 24 people | 2 warm-ups + practice, then 4 rounds, one per condition, in a **balanced Latin-square order** (random but balanced), with questionnaires after each round. |
 
 Full protocol: [docs/RUNNING_THE_STUDY.md](docs/RUNNING_THE_STUDY.md). How hesitation is detected, with every number
-explained: [docs/DETECTOR.md](docs/DETECTOR.md) and [docs/VALUES.md](docs/VALUES.md).
+explained: [docs/DETECTOR.md](docs/DETECTOR.md) and [docs/VALUES.md](docs/VALUES.md). **When the AI pop-up appears, with the reason for every value: [docs/TRIGGER_LOGIC.md](docs/TRIGGER_LOGIC.md).**
 
 ## Features
 
