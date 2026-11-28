@@ -25,12 +25,15 @@ SYSTEM = (
     "storage, gaming or photos), start by naming that phone, then give the 1 to 3 facts from the data that decide it, "
     "compared with the closest alternative. Do not describe every phone; mention only the phones that matter for the "
     "answer. "
-    "Judge with the measured values in the specs (screen-on time, low-light limit, zoom, brightness, free space, speed "
-    "after 30 min), not the headline numbers. Convert different units to the same unit before comparing (minutes and "
+    "Judge with the lab tests (screen-on time, low-light limit, zoom, brightness, free space, speed after 30 min), "
+    "which measure what the phone really does; headline numbers such as mAh, MP or charger watts do not decide it. "
+    "The buyer cannot see the lab tests on the shop screen, so when you use one, say it comes from the lab test. Convert different units to the same unit before comparing (minutes and "
     "hours; GB, TB and MB; millions and Indian lakhs). Lower lux and lower f-numbers are better. Optical zoom stays "
     "sharp, digital zoom only crops: if a phone zooms further than its measured sharp limit, say both (for example: "
     "zooms 10x, but faces stay sharp only up to 8x). For questions about the buyer's needs, respect the budget and the "
-    "priorities on the buyer's card. "
+    "priorities on the buyer's card: the best phone for the buyer is the one within budget that is best on Priority 1 "
+    "(use the lab facts given); Priority 2 only matters when Priority 1 is nearly tied. Give only your conclusions, "
+    "never your working, corrections or second thoughts. "
     "Keep it under 90 words. Write numbers as digits with their units (for example 12 h 40 min, 2 lux, Rs 24,999). "
     "Plain text only: no markdown, no headings, no bold. Use 2 to 4 short lines, each starting with '- '."
 )
@@ -45,14 +48,71 @@ GLOSSARY = {
 }
 
 
+# Lab values converted to one unit per measure (from the phone set's hidden true values), so the AI never has to
+# convert minutes, hours, TB, MB or lakhs itself: (label, unit, decimals, higher is better)
+LAB_COMMON = {
+    "battery_h": ("screen-on time", "h", 1, True), "gaming_battery_h": ("battery while gaming", "h", 1, True),
+    "lowlight_lux": ("sharp photos down to", "lux (lower is better)", 0, False),
+    "zoom_x": ("faces stay sharp up to", "x zoom", 1, True), "nits": ("peak brightness", "nits", 0, True),
+    "free_gb": ("free storage", "GB", 0, True), "sustained": ("speed after 30 min of gaming", "AnTuTu points", 0, True),
+    "peak": ("first-run speed", "AnTuTu points", 0, True), "antutu": ("AnTuTu benchmark", "points", 0, True),
+}
+
+
+def _lab_common(p):
+    t = p.get("_truth") or {}
+    out = []
+    for k, (label, unit, dec, _) in LAB_COMMON.items():
+        if t.get(k) is not None:
+            out.append(f"{label} {t[k]:,.{dec}f} {unit}")
+    return "; ".join(out)
+
+
+# Which lab value measures each card priority, per set (same mapping as tests/test_phone_sets.py)
+PRIORITY_MEASURE = {
+    ("S1", "battery"): "battery_h", ("S1", "camera"): "lowlight_lux", ("S2", "camera"): "zoom_x",
+    ("S2", "display"): "nits", ("S3", "storage"): "free_gb", ("S3", "display"): "nits",
+    ("S4", "chip"): "sustained", ("S4", "battery"): "gaming_battery_h", ("S5", "battery"): "battery_h",
+    ("S5", "storage"): "free_gb",
+}
+
+
+def _priority_facts(set_id, s):
+    """Phones within budget ranked on each card priority by its lab value, plus phones over budget."""
+    budget = s["card"].get("budget")
+    inb = [p for p in s["phones"] if not budget or (p.get("_truth") or {}).get("price", 0) <= budget]
+    over = [p["name"] for p in s["phones"] if p not in inb]
+    lines = []
+    for n, pr in enumerate(s["card"].get("priorities", [])[:2], 1):
+        key = PRIORITY_MEASURE.get((set_id, pr))
+        if not key or key not in LAB_COMMON:
+            continue
+        label, unit, dec, higher = LAB_COMMON[key]
+        ranked = sorted((p for p in inb if (p.get("_truth") or {}).get(key) is not None),
+                        key=lambda p: p["_truth"][key], reverse=higher)
+        lines.append(f"Priority {n} ({label}, within budget, best first): "
+                     + " > ".join(f"{p['name']} {p['_truth'][key]:,.{dec}f} {unit}" for p in ranked))
+    if over:
+        lines.append("Over budget: " + ", ".join(over))
+    return lines
+
+
 def set_context(set_id):
     s = get_set(set_id)
     labels = catalog()["spec_labels"]
-    lines = [f"Buyer: {s['card']['persona']} {s['card']['text']}", "Phones on screen (every spec the buyer can see):"]
+    lines = [f"Buyer: {s['card']['persona']} {s['card']['text']}", "Phones (specs on screen, then lab tests and review):"]
     for p in s["phones"]:
-        # only what the participant can see while shopping (lab table and reviews come after the choice)
+        # the AI knows more than the shopping screen shows: the lab tests and review from the comparison page
         specs = "; ".join(f"{labels[k]}: {v}" for k, v in p["specs"].items())
+        lab = "; ".join(f"{a}: {b}" for a, b in p.get("details", []))
         lines.append(f"* {p['name']} - colours: {', '.join(p['colours'])}; {specs}")
+        if lab:
+            lines.append(f"  Lab tests: {lab}")
+            lines.append(f"  Lab tests in one unit (use these to compare): {_lab_common(p)}")
+        if p.get("review"):
+            lines.append(f"  Review: {p['review']}")
+    lines.append("Lab facts for the buyer's card (Priority 1 decides 'best for the buyer'; Priority 2 only breaks a near tie):")
+    lines += _priority_facts(set_id, s)
     lines.append("How to read the specs:")
     lines += [f"* {labels.get(k, k)}: {v}" for k, v in GLOSSARY.items()]
     return "\n".join(lines)
