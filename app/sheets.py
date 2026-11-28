@@ -153,7 +153,7 @@ def local_rows(study, include_sim=False):
                     "first_popup_s": round(pops[0]["t_ms"] / 1000, 1) if pops and pops[0]["t_ms"] is not None else None,
                     "unsure_yes": sum(1 for x in pops if x["unsure_answer"] == "yes"),
                     "unsure_no": sum(1 for x in pops if x["unsure_answer"] == "no"),
-                    "help_accepted": sum(1 for x in pops if x["choice"] in ("compare", "explain", "general")),
+                    "help_accepted": sum(1 for x in pops if x["choice"] in ("compare", "explain", "general", "ask")),
                     "help_dismissed": sum(1 for x in pops if x["choice"] == "dismiss"),
                     "ai_requests": n_ai,
                     "unsure_moments_marked": len(db.loads(lab[0], []) or []) if lab else None,

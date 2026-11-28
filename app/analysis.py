@@ -320,7 +320,7 @@ def _pilot_ai_check(conn, people):
     return {
         "n_tasks": len(tids), "n_popups": len(pops),
         "unsure_yes": sum(1 for p in pops if p["unsure_answer"] == "yes"),
-        "accepted": sum(1 for p in pops if p["choice"] in ("compare", "explain", "general")),
+        "accepted": sum(1 for p in pops if p["choice"] in ("compare", "explain", "general", "ask")),
         "median_ai_latency_ms": st.median([r["latency_ms"] for r in reqs]) if reqs else None,
         "providers": dict(_count(r["provider"] for r in reqs)),
         "median_reading_s": st.median(read_s) if read_s else None,
@@ -431,7 +431,7 @@ def main_results(include_sim=False):
         ans = [p for p in v if p["unsure_answer"] in ("yes", "no")]
         k = sum(1 for p in ans if p["unsure_answer"] == "yes")
         yes, lo, hi = wilson(k, len(ans))
-        acc = [p for p in v if p["choice"] in ("compare", "explain", "general")]
+        acc = [p for p in v if p["choice"] in ("compare", "explain", "general", "ask")]
         match = [p for p in acc if p["choice"] == p["predicted_type"]]
         # at_buy pop-ups are the same in both conditions (Buy clicked before any pop-up), so the Smart vs Random
         # comparison uses the timed pop-ups; both numbers are reported
@@ -468,7 +468,7 @@ def main_results(include_sim=False):
         tks = ticks.get(p["task_id"], [])
         if not tks:
             continue
-        grp = ("C3" if p["source"] == "detector" else "C4") + (" accepted" if p["choice"] in ("compare", "explain", "general") else " dismissed")
+        grp = ("C3" if p["source"] == "detector" else "C4") + (" accepted" if p["choice"] in ("compare", "explain", "general", "ask") else " dismissed")
         b = [tk["scores"]["avg"] for tk in tks if p["t_ms"] - 10000 <= tk["t"] < p["t_ms"]]
         a = [tk["scores"]["avg"] for tk in tks if (p["closed_ms"] or p["t_ms"]) < tk["t"] <= (p["closed_ms"] or p["t_ms"]) + 10000]
         if b and a:

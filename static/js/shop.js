@@ -261,44 +261,81 @@ const AiPanel = {
       this._offer(pop, ctx);
     });
   },
+  _head(closeLabel, closeAttr) {
+    return `<div class="ai-head"><span style="font-size:1.15rem">🤖</span> <b>AI Assistant</b>${closeLabel ? ` <button class="x" ${closeAttr || ""}>${esc(closeLabel)}</button>` : ""}</div>`;
+  },
   _offer(pop, ctx) {
     const names = (pop.pair || []).map(p => p.name || p.id || "phone");
-    const cmp = `<button data-c="compare">Compare ${esc(names[0] || "two phones")} and ${esc(names[1] || "another")}</button>`;
     const specLabel = pop.spec ? (pop.spec.label || pop.spec.key || "a spec") : "a spec";
-    const exp = `<button data-c="explain">Explain "${esc(specLabel)}"</button>`;
-    const gen = `<button data-c="general">Give me a quick overview</button>`;
-    const first = pop.predicted_type === "compare" ? [cmp, exp, gen] : pop.predicted_type === "explain" ? [exp, cmp, gen] : [gen, cmp, exp];
+    const opt = { compare: `Compare ${names[0] || "two phones"} and ${names[1] || "another"}`, explain: `Explain "${specLabel}"`, general: "Give me a quick overview" };
+    const order = pop.predicted_type === "compare" ? ["compare", "explain", "general"] : pop.predicted_type === "explain" ? ["explain", "compare", "general"] : ["general", "compare", "explain"];
     const lead = pop.stage === "at_buy" ? "Before you buy, want a quick second opinion?"
       : pop.predicted_type === "compare" ? `Torn between ${esc(names[0] || "these phones")} and ${esc(names[1] || "another")}? I can help.`
       : pop.predicted_type === "explain" ? `Want "${esc(specLabel)}" explained?` : "Need help deciding?";
-    const n = this._mount(`
-      <div class="ai-head"><span style="font-size:1.15rem">🤖</span> <b>AI Assistant</b> <button class="x" data-c="dismiss" title="Close">No thanks</button></div>
+    const n = this._mount(`${this._head("No thanks", 'data-c="dismiss" title="Close"')}
       <p>${lead}</p>
-      <div class="opts">${first.join("")}</div>`);
-    n.querySelectorAll("[data-c]").forEach(b => b.onclick = async () => {
-      const choice = b.dataset.c;
-      if (choice === "dismiss") {
-        if (!ctx.demo && pop && pop.id) API.post(`/api/popup/${pop.id}/choice`, { token: ctx.token, t: ctx.now(), choice }).catch(() => {});
-        this.close(); return;
-      }
-      const g = this._loading();
-      try {
-        let r;
-        const pair = (pop.pair || []).map(p => p.id || p);
-        if (ctx.demo || !pop.id) {
-          r = await API.post(`/api/task/${ctx.taskId}/ask`, { token: ctx.token, t: ctx.now(), mode: choice, pair, spec: pop.spec && pop.spec.key });
-        } else {
-          r = await API.post(`/api/popup/${pop.id}/choice`, { token: ctx.token, t: ctx.now(), choice, pair, spec: pop.spec && pop.spec.key });
-        }
-        if (g !== this.gen) return;
-        this._answer(r.text, () => { if (!ctx.demo && pop && pop.id) API.post(`/api/popup/${pop.id}/closed`, { token: ctx.token, t: ctx.now() }).catch(() => {}); });
-      } catch (e) { if (g === this.gen) this._answer("Sorry, the assistant could not answer right now.", () => {}); }
+      <div class="opts">${order.map(k => `<button data-c="${k}">${esc(opt[k])}</button>`).join("")}</div>
+      <label class="small">Or ask your own question</label>
+      <textarea class="qq" placeholder="For example: which phone has the best zoom?"></textarea>
+      <div class="row"><button class="primary" data-own>Ask</button></div>`);
+    const conv = { kind: "popup", pop, ctx, thread: [] };
+    n.querySelector('[data-c="dismiss"]').onclick = () => {
+      if (!ctx.demo && pop && pop.id) API.post(`/api/popup/${pop.id}/choice`, { token: ctx.token, t: ctx.now(), choice: "dismiss" }).catch(() => {});
+      this.close();
+    };
+    n.querySelectorAll(".opts [data-c]").forEach(b => b.onclick = () => {
+      const mode = b.dataset.c;
+      this._send(conv, opt[mode], { mode, pair: (pop.pair || []).map(p => p.id || p), spec: pop.spec && pop.spec.key });
+    });
+    this._ownQuestion(n, q => this._send(conv, q, { mode: "ask", question: q }));
+  },
+  /* Typed question: Ask button, or Enter (Shift+Enter for a new line). */
+  _ownQuestion(n, go) {
+    const box = n.querySelector(".qq"), btn = n.querySelector("[data-own]");
+    const send = () => { const q = box.value.trim(); if (q) go(q); };
+    btn.onclick = send;
+    box.addEventListener("keydown", e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } });
+  },
+  /* One conversation (pop-up or Ask AI): the first question, then any follow-ups, each answered with the
+     earlier questions and answers as context. */
+  _send(conv, label, req) {
+    conv.thread.push({ q: label, a: null });
+    this._thread(conv);
+    const g = this.gen;
+    const { ctx, pop } = conv;
+    const history = conv.thread.slice(0, -1).filter(h => h.a).map(h => ({ q: h.q, a: h.a }));
+    let call;
+    if (conv.kind === "popup" && pop && pop.id && !ctx.demo) {
+      call = req.mode === "ask"
+        ? API.post(`/api/popup/${pop.id}/ask`, { token: ctx.token, t: ctx.now(), question: req.question, history })
+        : API.post(`/api/popup/${pop.id}/choice`, { token: ctx.token, t: ctx.now(), choice: req.mode, pair: req.pair, spec: req.spec });
+    } else {
+      call = API.post(`/api/task/${ctx.taskId}/ask`, Object.assign({ token: ctx.token, t: ctx.now() }, req,
+        req.mode === "ask" ? { history } : {}));
+    }
+    call.then(r => r.text).catch(() => "Sorry, the assistant could not answer right now.").then(text => {
+      conv.thread[conv.thread.length - 1].a = text;
+      if (g === this.gen) this._thread(conv);
     });
   },
-  _loading() { this._mount(`<div class="ai-head"><span style="font-size:1.15rem">🤖</span> <b>AI Assistant</b></div><p class="muted">Thinking<span class="dots"></span></p>`); return this.gen; },
-  _answer(text, onClose) {
-    const n = this._mount(`<div class="ai-head"><span style="font-size:1.15rem">🤖</span> <b>AI Assistant</b> <button class="x">Close</button></div><div class="answer">${formatAnswer(text)}</div>`);
-    n.querySelector(".x").onclick = () => { onClose(); this.close(); };
+  _thread(conv) {
+    const busy = conv.thread.some(h => h.a == null);
+    const items = conv.thread.map(h => `<div class="ai-q">${esc(h.q)}</div>` + (h.a == null
+      ? `<p class="muted">Thinking<span class="dots"></span></p>` : `<div class="answer">${formatAnswer(h.a)}</div>`)).join("");
+    const n = this._mount(`${this._head("Close")}
+      <div class="ai-thread">${items}</div>
+      <label class="small">Ask a follow-up</label>
+      <textarea class="qq" placeholder="For example: and which one has the better battery?" ${busy ? "disabled" : ""}></textarea>
+      <div class="row"><button class="primary" data-own ${busy ? "disabled" : ""}>Ask</button>${conv.kind === "ask" ? "<button data-new>New question</button>" : ""}</div>`);
+    const th = n.querySelector(".ai-thread");
+    th.scrollTop = th.scrollHeight;
+    const { ctx, pop } = conv;
+    n.querySelector(".x").onclick = () => {
+      if (conv.kind === "popup" && pop && pop.id && !ctx.demo) API.post(`/api/popup/${pop.id}/closed`, { token: ctx.token, t: ctx.now() }).catch(() => {});
+      this.close();
+    };
+    if (conv.kind === "ask") n.querySelector("[data-new]").onclick = () => this.askForm(ctx);
+    if (!busy) this._ownQuestion(n, q => this._send(conv, q, { mode: "ask", question: q }));
   },
 
   /* "Ask AI" button for condition C2 (and the practice round). */
@@ -310,38 +347,32 @@ const AiPanel = {
   },
   askForm(ctx) {
     const set = ctx.set;
-    const opts = ctx.card_order.map(id => set.phones.find(p => p.id === id)).map(p => `<option value="${p.id}">${esc(p.name)}</option>`).join("");
+    const phones = ctx.card_order.map(id => set.phones.find(p => p.id === id));
+    const opts = phones.map(p => `<option value="${p.id}">${esc(p.name)}</option>`).join("");
     const specs = SPEC_ORDER.map(k => `<option value="${k}">${esc(set.spec_labels[k])}</option>`).join("");
     const n = this._mount(`
       <div class="ai-head">Ask the AI assistant <button class="x">Close</button></div>
-      <label>Compare two phones</label>
-      <div class="row"><select class="p1" style="flex:1">${opts}</select><select class="p2" style="flex:1">${opts}</select></div>
-      <div class="row" style="margin-top:6px"><button data-m="compare">Compare</button></div>
-      <label>Explain a spec</label>
-      <div class="row"><select class="sp" style="flex:1">${specs}</select><button data-m="explain">Explain</button></div>
-      <label>Or ask your own question</label>
+      <label>Ask your own question</label>
       <textarea class="qq" placeholder="For example: which phone lasts longest on battery?"></textarea>
-      <div class="row" style="margin-top:6px"><button data-m="ask">Ask</button></div>`);
+      <div class="row" style="margin-top:6px"><button class="primary" data-own>Ask</button></div>
+      <label>Or compare two phones</label>
+      <div class="row"><select class="p1" style="flex:1">${opts}</select><select class="p2" style="flex:1">${opts}</select><button data-m="compare">Compare</button></div>
+      <label>Or explain a spec</label>
+      <div class="row"><select class="sp" style="flex:1">${specs}</select><button data-m="explain">Explain</button></div>`);
     n.querySelector(".p2").selectedIndex = 1;
     n.querySelector(".x").onclick = () => this.close();
-    n.querySelectorAll("[data-m]").forEach(b => b.onclick = async () => {
-      const mode = b.dataset.m;
-      const body = { token: ctx.token, t: ctx.now(), mode };
-      if (mode === "compare") body.pair = [n.querySelector(".p1").value, n.querySelector(".p2").value];
-      if (mode === "explain") body.spec = n.querySelector(".sp").value;
-      if (mode === "ask") { body.question = n.querySelector(".qq").value.trim(); if (!body.question) return; }
-      if (mode === "compare" && body.pair[0] === body.pair[1]) { alert("Please pick two different phones."); return; }
-      const g = this._loading();
-      try {
-        const r = await API.post(`/api/task/${ctx.taskId}/ask`, body);
-        if (g !== this.gen) return;
-        this._answer(r.text, () => {});
-        const x = this.node.querySelector(".x");
-        const again = el(`<button>Ask something else</button>`);
-        again.onclick = () => this.askForm(ctx);
-        x.parentElement.after(again);
-      } catch (e) { if (g === this.gen) this._answer("Sorry, the assistant could not answer right now.", () => {}); }
-    });
+    const conv = { kind: "ask", ctx, thread: [] };
+    const name = id => (phones.find(p => p.id === id) || {}).name || id;
+    n.querySelector('[data-m="compare"]').onclick = () => {
+      const pair = [n.querySelector(".p1").value, n.querySelector(".p2").value];
+      if (pair[0] === pair[1]) { alert("Please pick two different phones."); return; }
+      this._send(conv, `Compare ${name(pair[0])} and ${name(pair[1])}`, { mode: "compare", pair });
+    };
+    n.querySelector('[data-m="explain"]').onclick = () => {
+      const spec = n.querySelector(".sp").value;
+      this._send(conv, `Explain "${set.spec_labels[spec]}"`, { mode: "explain", spec });
+    };
+    this._ownQuestion(n, q => this._send(conv, q, { mode: "ask", question: q }));
   },
 };
 

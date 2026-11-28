@@ -217,3 +217,12 @@ pre.json { background: #0f172a; color: #e2e8f0; padding: 14px; border-radius: 10
 .debug-view .dv-bar { height: 8px; background: rgba(255,255,255,.18); border-radius: 4px; margin: 4px 0 6px; overflow: hidden; }
 .debug-view .dv-bar i { display: block; height: 100%; background: #F2A66E; }
 .debug-view .dv-z { color: #C9D3E6; }
+
+/* AI conversation: options, own question, follow-ups */
+.ai-panel { max-height: calc(100vh - 48px); display: flex; flex-direction: column; }
+.ai-panel textarea.qq { min-height: 56px; margin-top: 4px; }
+.ai-panel label.small { margin-top: 12px; }
+.ai-panel .ai-thread { overflow: auto; max-height: 46vh; margin: 4px 0 6px; padding-right: 4px; }
+.ai-panel .ai-thread .answer { max-height: none; margin-top: 4px; }
+.ai-panel .ai-q { font-weight: 600; color: var(--brand); margin-top: 12px; }
+.ai-panel .ai-q:first-child { margin-top: 0; }

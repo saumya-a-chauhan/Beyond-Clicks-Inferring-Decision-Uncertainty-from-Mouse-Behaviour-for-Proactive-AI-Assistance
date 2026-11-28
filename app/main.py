@@ -529,6 +529,7 @@ class AskBody(BaseModel):
     pair: list | None = None
     spec: str | None = None
     question: str | None = None
+    history: list | None = None    # earlier questions and answers in this conversation: [{q, a}]
 
 
 @app.post("/api/task/{task_id}/ask")
@@ -540,8 +541,28 @@ def api_ask(task_id: int, body: AskBody):
     if body.mode not in ("compare", "explain", "ask", "general"):
         raise HTTPException(400, "bad mode")
     args = {"pair": body.pair} if body.mode == "compare" else {"spec": body.spec} if body.mode == "explain" else \
-           {"question": (body.question or "")[:400]} if body.mode == "ask" else {}
+           {"question": (body.question or "")[:400], "history": llm.clean_history(body.history)} if body.mode == "ask" else {}
     return _ai(t, body.mode, args, body.t, "ask")
+
+
+class PopupAsk(BaseModel):
+    token: str
+    t: int
+    question: str
+    history: list | None = None
+
+
+@app.post("/api/popup/{popup_id}/ask")
+def api_popup_ask(popup_id: int, body: PopupAsk):
+    """A question typed into a Smart / Random pop-up, or a follow-up to an earlier answer in it."""
+    q = (body.question or "").strip()[:400]
+    if not q:
+        raise HTTPException(400, "Please type a question")
+    with db.engine.begin() as conn:
+        p, t, pop = _popup_for(conn, popup_id, body.token)
+        if pop["choice"] is None:            # typing a question counts as taking the help offer
+            conn.execute(db.popups.update().where(db.popups.c.id == popup_id).values(choice="ask", choice_ms=body.t))
+    return _ai(t, "ask", {"question": q, "history": llm.clean_history(body.history)}, body.t, "popup", popup_id)
 
 
 @app.get("/api/task/{task_id}/replay")

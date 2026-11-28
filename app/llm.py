@@ -65,8 +65,23 @@ def _name(set_id, pid):
     return pid
 
 
+MAX_TURNS = 4          # earlier questions and answers sent with a follow-up
+
+
+def clean_history(history):
+    """[{q, a}, ...] from the browser -> the last MAX_TURNS turns, trimmed."""
+    out = []
+    for h in (history or [])[-MAX_TURNS:]:
+        if isinstance(h, dict) and str(h.get("q") or "").strip():
+            out.append({"q": str(h["q"]).strip()[:400], "a": str(h.get("a") or "").strip()[:900]})
+    return out
+
+
 def build_prompt(set_id, mode, args):
     ctx = set_context(set_id)
+    hist = clean_history(args.get("history"))
+    if hist:
+        ctx += "\n\nConversation so far:\n" + "\n".join(f"Buyer: {h['q']}\nAssistant: {h['a']}" for h in hist)
     labels = catalog()["spec_labels"]
     if mode == "compare":
         a, b = (args.get("pair") or [None, None])[:2]
@@ -78,7 +93,8 @@ def build_prompt(set_id, mode, args):
                 "across these phones for this buyer (mention the relevant measured value).")
     elif mode == "ask":
         q = (args.get("question") or "").strip()[:400]
-        task = f"The buyer asks: \"{q}\"\nAnswer this question directly, as the instructions say."
+        task = (f"The buyer asks: \"{q}\"\nAnswer this question directly, as the instructions say"
+                + (" (it may follow up on the conversation above)." if hist else "."))
     else:
         task = ("Give a short overview for this buyer: which phone fits the card best and why, and the main trade-off "
                 "against the strongest alternative.")
@@ -94,7 +110,9 @@ def cache_key(set_id, mode, args):
     sid = f"{set_id}@{_version(set_id)}"
     if mode == "ask":
         q = re.sub(r"\s+", " ", (args.get("question") or "").strip().lower())
-        return f"{sid}|ask|{q}"[:255]
+        hist = clean_history(args.get("history"))
+        h = hashlib.sha1(json.dumps(hist, sort_keys=True).encode("utf-8")).hexdigest()[:10] if hist else ""
+        return f"{sid}|ask|{h}|{q}"[:255]
     if mode == "compare":
         pair = sorted((args.get("pair") or [])[:2])
         return f"{sid}|compare|{','.join(pair)}"
